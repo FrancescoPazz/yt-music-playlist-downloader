@@ -1,0 +1,12 @@
+[project]
+name = "ytmpd-spike"
+version = "0.1.0"
+description = "Throwaway check: yt-dlp and ytmpd.core inside a Flet Android app"
+requires-python = ">=3.10"
+# Pure-Python packages only: brotli, pycryptodomex and websockets (the native parts of yt-dlp[default]) are left out
+# until we know they build for Android. YouTube doesn't need them.
+dependencies = ["flet==1.1.2", "yt-dlp>=2026.10.26", "yt-dlp-ejs", "mutagen", "certifi", "requests"]
+
+[tool.flet]
+org = "io.github.francescopazz"
+product = "ytmpd spike"
