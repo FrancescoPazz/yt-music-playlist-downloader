@@ -135,6 +135,7 @@ python downloader.py --help
 |---|---|
 | `downloader.py` | Command-line options, link normalization, yt-dlp options and the progress line |
 | `requirements.txt` | `yt-dlp`, the only dependency |
+| `ROADMAP.md` | Plan for the desktop and Android GUI app |
 | `docs/` | Logo for this README |
 | `downloads/` | Default output folder, ignored by git |
 
