@@ -9,7 +9,7 @@ riskiest part (Android) is tested before the interface is built.
 | [0. Stack](#phase-0--choose-the-stack) | One codebase in Python with Flet | |
 | [1. Core](#phase-1--a-core-the-gui-can-call) ✅ | `downloader.py` split into a reusable core, the CLI keeps working | CLI |
 | [2. Android spike](#phase-2--android-spike) ✅ | One track downloaded on a real phone, or a decision to change plan | Android |
-| [3. Desktop MVP](#phase-3--desktop-mvp) | A window that does what the CLI does today, plus a track list | Windows |
+| [3. Desktop MVP](#phase-3--desktop-mvp) 🚧 | A window that does what the CLI does today, plus a track list | Windows |
 | [4. Android app](#phase-4--android-app) | The same app on the phone, with sharing from YouTube Music | Android |
 | [5. Releases](#phase-5--builds-and-releases) | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
 | [6. Staying current](#phase-6--keeping-up-with-youtube) | A new build whenever yt-dlp changes | Both |
@@ -90,6 +90,11 @@ it. The spike has to find out whether Flet's build lets us do that.
 **Done when** each row has an answer and the stack is confirmed or switched. Write the answers in a `DEVLOG.md`.
 
 ## Phase 3 — Desktop MVP
+
+**Built and tested from source** (`python main.py`); the packaged Windows build is still missing, because
+`flet build windows` needs Visual Studio with the C++ desktop tools. Changes from the plan below: format, quality
+and folder live on the Download screen (one place, remembered between runs) instead of Settings; FFmpeg comes from
+the `imageio-ffmpeg` package; each playlist gets its own subfolder; HTTP 403s are retried once by the core.
 
 | Screen | What is on it |
 |---|---|

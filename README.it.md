@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="Icona: una nota musicale dentro un anello, con una freccia di download sotto" width="128">
+  <img src="assets/icon.svg" alt="Icona: una nota musicale dentro un anello, con una freccia di download sotto" width="128">
 </p>
 
 <h1 align="center">YT Music Playlist Downloader</h1>
 
 <p align="center">
-  Uno script da riga di comando che scarica una playlist di YouTube o YouTube Music e salva ogni brano in MP3 o M4A.<br>
+  Un'app desktop e uno script da riga di comando che scaricano una playlist di YouTube o YouTube Music in MP3 o M4A.<br>
   Numera i file nell'ordine della playlist, scrive i tag, ricorda cosa ha già scaricato e può usare la sessione del browser per i video con restrizioni.
 </p>
 
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/yt--dlp-2026.10.26-e0475b?style=flat&labelColor=1d1517" alt="yt-dlp 2026.10.26">
   <img src="https://img.shields.io/badge/MP3-128%E2%80%93320%20kbps-e0475b?style=flat&labelColor=1d1517" alt="MP3 da 128 a 320 kbps">
   <img src="https://img.shields.io/badge/M4A-senza%20FFmpeg-e0475b?style=flat&labelColor=1d1517" alt="M4A senza FFmpeg">
-  <img src="https://img.shields.io/badge/GUI-in%20roadmap-e0475b?style=flat&labelColor=1d1517" alt="GUI nella roadmap">
+  <img src="https://img.shields.io/badge/app%20desktop-Flet-e0475b?style=flat&labelColor=1d1517" alt="App desktop fatta con Flet">
   <img src="https://img.shields.io/badge/license-MIT-e0475b?style=flat&labelColor=1d1517" alt="Licenza MIT">
 </p>
 
@@ -26,18 +26,19 @@
 
 | Vuoi | Vai a |
 |---|---|
-| **Scaricare subito una playlist** | [Installazione](#installazione), poi [Uso](#uso): due comandi e un link. |
+| **Scaricare con finestra e pulsanti** | [App desktop](#app-desktop): incolla un link, scegli i brani, premi Scarica. |
+| **Scaricare dal terminale** | [Installazione](#installazione), poi [Uso](#uso): due comandi e un link. |
 | **Sapere cosa finisce sul disco** | [Come funziona](#come-funziona): nomi dei file, tag, brani saltati e nuove esecuzioni. |
 | **Scaricare video con limite d'età o privati** | [Cookie del browser](#cookie-del-browser): usa la sessione in cui hai già fatto l'accesso. |
 | **Usarlo dal tuo codice Python** | [Sviluppo](#sviluppo): il pacchetto `ytmpd` e i suoi eventi. |
 | **Qualcosa è andato storto** | [Domande](#domande-frequenti): FFmpeg, buchi nella numerazione, file `NA`, HTTP 403. |
 
-[Come funziona](#come-funziona) · [Installazione](#installazione) · [Uso](#uso) · [Cookie del browser](#cookie-del-browser) ·
+[Come funziona](#come-funziona) · [App desktop](#app-desktop) · [Installazione](#installazione) · [Uso](#uso) · [Cookie del browser](#cookie-del-browser) ·
 [Sviluppo](#sviluppo) · [Roadmap](ROADMAP.md) · [Domande](#domande-frequenti)
 
 ## Come funziona
 
-Dai allo script il link di una playlist. Lui lo passa a [yt-dlp](https://github.com/yt-dlp/yt-dlp), scarica l'audio
+Gli dai il link di una playlist. Lo passa a [yt-dlp](https://github.com/yt-dlp/yt-dlp), scarica l'audio
 migliore di ogni video e lo salva in MP3 o M4A.
 
 | Passo | Cosa fa lo script |
@@ -62,6 +63,34 @@ downloads/
 ```
 
 Per ogni brano il terminale mostra il titolo, poi percentuale, velocità e tempo rimanente, poi il nome del file salvato.
+
+## App desktop
+
+| | |
+|---|---|
+| <img src="docs/screenshots/it/download.png" alt="Schermata Scarica: il link della playlist, un brano con la spunta verde, formato MP3 a 192 kbps e la cartella di destinazione" width="420"> | <img src="docs/screenshots/it/history.png" alt="Schermata Cronologia: una playlist con data, formato, cartella e i pulsanti Apri cartella e Ricarica" width="420"> |
+| *Scarica: i brani, cosa è fatto e dove finisce* | *Cronologia: ogni download, con cosa è stato saltato e perché* |
+| <img src="docs/screenshots/it/settings.png" alt="Schermata Impostazioni: cookie del browser, lingua, tema e le versioni di yt-dlp, FFmpeg e del runtime JavaScript" width="420"> | |
+| *Impostazioni: cookie, lingua, tema, e cosa l'app ha trovato sul computer* | |
+
+| Schermata | Cosa c'è |
+|---|---|
+| **Scarica** | Il campo del link, riempito dagli appunti quando contengono un link di YouTube. **Carica** elenca i brani con posizione e durata; spunta quelli che vuoi. I brani già presenti nella cartella di destinazione sono segnati e lasciati fuori. Formato, qualità MP3 e cartella stanno in basso; ogni playlist ha la sua sottocartella. Durante il download ogni brano mostra l'avanzamento, poi una spunta o un'icona rossa con il motivo del salto nel suggerimento. **Annulla** si ferma dopo il blocco in corso. |
+| **Cronologia** | Gli ultimi 100 download: playlist, data, formato, cartella, quanti brani sono stati salvati e quali saltati, con il motivo. **Apri cartella** e **Ricarica**. |
+| **Impostazioni** | Cookie del browser (vedi [Cookie del browser](#cookie-del-browser)), lingua (italiano, inglese o quella del sistema), tema (chiaro, scuro o quello del sistema), e le versioni di yt-dlp, FFmpeg e del runtime JavaScript in uso. |
+
+L'app usa un suo FFmpeg (dal pacchetto `imageio-ffmpeg`) quando nel PATH non ce n'è uno, quindi l'MP3 funziona senza
+installare altro. Impostazioni e cronologia sono salvate in `.ytmpd` nella cartella utente.
+
+Un `.exe` pronto arriva con la [fase 5 della roadmap](ROADMAP.md#phase-5--builds-and-releases). Fino ad allora si avvia
+dal codice sorgente:
+
+```bash
+python -m pip install -r requirements.txt "flet[all]==1.1.2" imageio-ffmpeg
+python main.py              # oppure: python main.py "https://music.youtube.com/playlist?list=..." per caricarla subito
+```
+
+Al primo avvio Flet scarica una volta il suo runtime per le finestre (circa un minuto).
 
 ## Installazione
 
@@ -133,7 +162,7 @@ spiega come esportare da una finestra in incognito dei cookie che durano di più
 ## Sviluppo
 
 Il codice è nel pacchetto `ytmpd`: `core` fa il lavoro e non stampa niente, `cli` è la riga di comando costruita sopra.
-L'interfaccia grafica prevista nella [roadmap](ROADMAP.md) userà `core` allo stesso modo.
+L'[app desktop](#app-desktop) (`ytmpd/gui.py`) usa `core` allo stesso modo.
 
 ```bash
 python -m venv .venv
@@ -171,13 +200,18 @@ result = core.download("https://music.youtube.com/playlist?list=...", "downloads
 |---|---|
 | `ytmpd/core.py` | Normalizzazione del link, opzioni di yt-dlp, elenco della playlist, download con eventi e annullamento, tag M4A |
 | `ytmpd/cli.py` | Opzioni da riga di comando e messaggi in italiano |
+| `ytmpd/gui.py` | App desktop: le tre schermate, i thread in background, i file di impostazioni e cronologia |
+| `ytmpd/i18n.py` | Testi dell'app in italiano e inglese; i test controllano che abbiano le stesse chiavi |
+| `main.py` | Avvia l'app desktop |
+| `pyproject.toml` | Nome, versione e dipendenze dell'app per `flet build` |
 | `downloader.py` | Wrapper di due righe, così `python downloader.py` continua a funzionare |
 | `tests/test_core.py` | Test su link, opzioni e tag (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, che porta con sé `yt-dlp-ejs` (il risolutore della verifica JavaScript) e `mutagen` (tag M4A) |
 | `ROADMAP.md` | Piano per l'app con interfaccia grafica, desktop e Android |
 | `DEVLOG.md` | Cosa ha scoperto ogni fase, a partire dalla prova su Android |
 | `spike/android/` | App Flet usa e getta per provare `ytmpd.core` su Android |
-| `docs/` | Logo di questo README |
+| `assets/icon.svg` | Icona dell'app, anche logo di questo README |
+| `docs/screenshots/` | Screenshot per i README, in inglese e italiano |
 | `downloads/` | Cartella di output predefinita, ignorata da git |
 
 </details>

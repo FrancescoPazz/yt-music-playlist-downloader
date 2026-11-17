@@ -62,5 +62,100 @@ class Tags(unittest.TestCase):
         self.assertEqual(core.tags_for(info), {"title": "Me at the zoo", "artist": "jawed"})
 
 
+class Reasons(unittest.TestCase):
+    def test_kinds(self):
+        cases = {
+            "[youtube] abcdefghijk: Private video. Sign in if you've been granted access to this video": "private",
+            "[youtube] abcdefghijk: Sign in to confirm your age. This video may be inappropriate for some users. "
+            "Use --cookies-from-browser or --cookies for the authentication.": "age",
+            "[youtube] abcdefghijk: Sign in to confirm you’re not a bot. Use --cookies-from-browser": "bot",
+            "[youtube] abcdefghijk: Video unavailable. The uploader has not made this video available in your "
+            "country": "region",
+            "[youtube] abcdefghijk: Video unavailable. This video is no longer available because the YouTube "
+            "account associated with this video has been terminated.": "unavailable",
+            "[youtube] abcdefghijk: Join this channel to get access to members-only content like this video": "members",
+            "unable to download video data: HTTP Error 403: Forbidden": "forbidden",
+            "[youtube] abcdefghijk: Unable to download webpage: <urlopen error [Errno 11001] getaddrinfo failed>":
+                "network",
+            "Failed to decrypt with DPAPI. See  https://github.com/yt-dlp/yt-dlp/issues/10927 (cookie)": "cookies",
+            "[youtube:tab] PLx: Unable to download API page: HTTP Error 400: Bad Request": "not_found",
+            "Unsupported URL: https://example.com/": "not_found",
+            "something new": "other",
+        }
+        for message, kind in cases.items():
+            self.assertEqual(core.reason_kind(message), kind, message)
+
+    def test_video_id(self):
+        self.assertEqual(core.video_id_in("[youtube] jNQXAC9IVRw: Private video"), "jNQXAC9IVRw")
+        self.assertIsNone(core.video_id_in("HTTP Error 403: Forbidden"))
+
+
+class Archive(unittest.TestCase):
+    def test_reads_ids_and_tolerates_missing_file(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(core.archived_ids(d), set())
+            (Path(d) / core.ARCHIVE).write_text("youtube jNQXAC9IVRw\nyoutube abcdefghijk\n\n", encoding="utf-8")
+            self.assertEqual(core.archived_ids(d), {"jNQXAC9IVRw", "abcdefghijk"})
+
+
+class RetryAfter403(unittest.TestCase):
+    """download() with a fake YoutubeDL: no network."""
+
+    def run_with(self, fail_times):
+        import tempfile
+        from unittest import mock
+
+        class FakeYDL:
+            calls = 0
+
+            def __init__(self, opts):
+                self.opts, self.pps = opts, {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                pass
+
+            def add_post_processor(self, pp, when):
+                self.pps[when] = pp
+
+            def download(self, urls):
+                FakeYDL.calls += 1
+                info = {"id": "abcdefghijk", "title": "Song", "filepath": "x.mp3"}
+                self.pps["pre_process"].run(info)
+                if FakeYDL.calls <= fail_times:
+                    self.opts["logger"].error("ERROR: unable to download video data: HTTP Error 403: Forbidden")
+                else:
+                    self.pps["after_move"].run(info)
+
+        events = []
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(core.yt_dlp, "YoutubeDL", FakeYDL):
+            result = core.download("https://www.youtube.com/watch?v=abcdefghijk", d, "m4a", on_event=events.append)
+        return result, FakeYDL.calls, events
+
+    def test_a_403_is_retried_once(self):
+        result, calls, events = self.run_with(fail_times=1)
+        self.assertEqual((result["done"], result["skipped"], calls), (1, 0, 2))
+        skipped = next(e for e in events if e["type"] == "track_skipped")
+        self.assertEqual((skipped["id"], skipped["title"], skipped["kind"]), ("abcdefghijk", "Song", "forbidden"))
+
+    def test_gives_up_after_the_second_403(self):
+        result, calls, _ = self.run_with(fail_times=5)
+        self.assertEqual((result["done"], result["skipped"], calls), (0, 1, 2))
+
+
+class Translations(unittest.TestCase):
+    def test_same_keys_and_every_reason_explained(self):
+        from ytmpd.i18n import STRINGS
+
+        self.assertEqual(STRINGS["it"].keys(), STRINGS["en"].keys())
+        for kind in [k for k, _ in core._REASONS] + ["other"]:
+            self.assertIn(f"reason_{kind}", STRINGS["en"])
+
+
 if __name__ == "__main__":
     unittest.main()
