@@ -4,6 +4,7 @@ Nothing here prints: progress is reported as event dicts to `on_event`, so the C
 Use only for content you are authorized to download.
 """
 
+import re
 import shutil
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -30,8 +31,55 @@ def normalize_url(url: str) -> str:
     return url
 
 
+def bundled_ffmpeg() -> str | None:
+    """FFmpeg from the imageio-ffmpeg wheel, used only when there is none on the PATH (the desktop app ships it)."""
+    if shutil.which("ffmpeg"):
+        return None
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:  # not installed (CLI, Android) or binary missing
+        return None
+
+
 def ffmpeg_available() -> bool:
-    return shutil.which("ffmpeg") is not None
+    return shutil.which("ffmpeg") is not None or bundled_ffmpeg() is not None
+
+
+def archived_ids(output_dir: str) -> set[str]:
+    """Video ids already downloaded into output_dir, read from its archive ("youtube <id>" per line)."""
+    try:
+        lines = (Path(output_dir) / ARCHIVE).read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return set()
+    return {line.split()[-1] for line in lines if line.strip()}
+
+
+# Checked in order: the first match wins, so the more specific phrases come first.
+_REASONS = (
+    ("age", ("confirm your age", "age-restricted", "inappropriate for some users")),
+    ("bot", ("not a bot",)),
+    ("private", ("private video",)),
+    ("members", ("members-only", "join this channel", "premium")),
+    ("region", ("in your country", "geo restrict")),
+    ("unavailable", ("video unavailable", "has been removed", "is not available", "account associated")),
+    ("cookies", ("cookie",)),
+    ("forbidden", ("http error 403",)),
+    ("not_found", ("does not exist", "http error 404", "http error 400", "unsupported url", "is not a valid url")),
+    ("network", ("unable to download webpage", "getaddrinfo", "timed out", "connection", "network is unreachable")),
+)
+
+
+def reason_kind(message: str) -> str:
+    """Sorts a yt-dlp error into a few kinds the GUI can explain in plain words; "other" if none fits."""
+    text = message.lower()
+    return next((kind for kind, phrases in _REASONS if any(p in text for p in phrases)), "other")
+
+
+def video_id_in(message: str) -> str | None:
+    """yt-dlp errors start with "[youtube] <id>: ..."; returns that id."""
+    match = re.search(r"\[youtube\] ([\w-]{11}):", message)
+    return match.group(1) if match else None
 
 
 def _base_options(browser: str) -> dict:
@@ -63,6 +111,8 @@ def build_options(output_dir: str, fmt: str = "mp3", bitrate: str = "192", brows
             {"key": "FFmpegMetadata", "add_metadata": True, "add_chapters": False},
         ]
         opts["postprocessor_args"] = {"default": ["-id3v2_version", "3"]}
+        if ffmpeg := bundled_ffmpeg():
+            opts["ffmpeg_location"] = ffmpeg  # its folder has no ffprobe; yt-dlp falls back to `ffmpeg -i`
     elif fmt == "m4a":
         # YouTube's own AAC stream, saved as is: no FFmpeg, no re-encoding. Tags come from Mp4Tags.
         opts["format"] = "bestaudio[ext=m4a]"
@@ -103,15 +153,16 @@ class _Events(PostProcessor):
         self.emit = emit
 
     def run(self, info):
-        self.emit({"type": "track_done", "index": info.get("playlist_index"), "title": info.get("title"),
-                   "path": info.get("filepath")})
+        self.emit({"type": "track_done", "id": info.get("id"), "index": info.get("playlist_index"),
+                   "title": info.get("title"), "path": info.get("filepath")})
         return [], info
 
 
 class _Logger:
     def __init__(self, emit):
         self.emit = emit
-        self.errors = 0
+        self.failed = []  # track_skipped events of the current pass
+        self.current = {}  # info of the video being processed, set by _Current
 
     def debug(self, msg):
         pass
@@ -122,18 +173,38 @@ class _Logger:
         self.emit({"type": "warning", "message": msg})
 
     def error(self, msg):
-        self.errors += 1
-        self.emit({"type": "track_skipped", "reason": msg.removeprefix("ERROR: ")})
+        reason = msg.removeprefix("ERROR: ")
+        vid = video_id_in(reason)
+        if vid is None:  # e.g. "HTTP Error 403" during the download: it's about the video being processed
+            vid = self.current.get("id")
+        title = self.current.get("title") if vid == self.current.get("id") else None
+        event = {"type": "track_skipped", "id": vid, "title": title, "reason": reason, "kind": reason_kind(reason)}
+        self.failed.append(event)
+        self.emit(event)
+
+
+class _Current(PostProcessor):
+    """Runs before each video is downloaded and remembers it, so errors without an id can be attributed."""
+
+    def __init__(self, logger):
+        super().__init__()
+        self.logger = logger
+
+    def run(self, info):
+        self.logger.current = {"id": info.get("id"), "title": info.get("title")}
+        return [], info
 
 
 def list_playlist(url: str, browser: str = "none") -> dict:
     """Titles and durations of the tracks, without downloading. Takes seconds even for long playlists."""
-    opts = _base_options(browser) | {"extract_flat": "in_playlist", "skip_download": True}
+    opts = _base_options(browser) | {"extract_flat": "in_playlist", "skip_download": True,
+                                     "logger": _Logger(lambda e: None)}  # errors still raise; nothing printed
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(normalize_url(url), download=False)
     entries = info.get("entries") or [info]
     return {
         "title": info.get("title"),
+        "is_playlist": "entries" in info,
         "tracks": [
             {
                 "index": i,
@@ -178,10 +249,12 @@ def download(url: str, output_dir: str = "downloads", fmt: str = "mp3", bitrate:
             return
         if info.get("id") != current["id"]:
             current["id"] = info.get("id")
-            emit({"type": "track_started", "index": info.get("playlist_index"), "title": info.get("title")})
+            emit({"type": "track_started", "id": current["id"], "index": info.get("playlist_index"),
+                  "title": info.get("title")})
         total = d.get("total_bytes") or d.get("total_bytes_estimate")
         emit({
             "type": "progress",
+            "id": info.get("id"),
             "index": info.get("playlist_index"),
             "percent": 100 * d["downloaded_bytes"] / total if total and d.get("downloaded_bytes") else None,
             "speed": d.get("speed"),
@@ -195,14 +268,22 @@ def download(url: str, output_dir: str = "downloads", fmt: str = "mp3", bitrate:
     }
     cancelled = False
     with yt_dlp.YoutubeDL(opts) as ydl:
+        ydl.add_post_processor(_Current(logger), when="pre_process")
         if fmt == "m4a":
             ydl.add_post_processor(Mp4Tags(), when="post_process")
         ydl.add_post_processor(_Events(emit), when="after_move")
-        try:
-            ydl.download([normalize_url(url)])
-        except DownloadCancelled:
-            cancelled = True
+        # YouTube sometimes answers the first request with HTTP 403 and the same request works a moment later.
+        # A second pass retries only the failed tracks: the archive skips the ones already done.
+        for attempt in range(2):
+            logger.failed = []
+            try:
+                ydl.download([normalize_url(url)])
+            except DownloadCancelled:
+                cancelled = True
+                break
+            if not any(e["kind"] == "forbidden" for e in logger.failed):
+                break
 
-    result = {"type": "finished", "done": len(done), "skipped": logger.errors, "cancelled": cancelled}
+    result = {"type": "finished", "done": len(done), "skipped": len(logger.failed), "cancelled": cancelled}
     on_event(result)
     return result
