@@ -5,8 +5,8 @@
 <h1 align="center">YT Music Playlist Downloader</h1>
 
 <p align="center">
-  A command-line script that downloads a YouTube or YouTube Music playlist and turns every track into an MP3.<br>
-  It numbers the files in playlist order, writes the ID3 tags and can use your browser's session for restricted videos.
+  A command-line script that downloads a YouTube or YouTube Music playlist and saves every track as MP3 or M4A.<br>
+  It numbers the files in playlist order, writes the tags, remembers what it already downloaded and can use your browser's session for restricted videos.
 </p>
 
 <p align="center">
@@ -15,10 +15,10 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-e0475b?style=flat&labelColor=1d1517" alt="Python 3.10 or later">
-  <img src="https://img.shields.io/badge/yt--dlp-2026.08.19-e0475b?style=flat&labelColor=1d1517" alt="yt-dlp 2026.08.19">
-  <img src="https://img.shields.io/badge/FFmpeg-required-e0475b?style=flat&labelColor=1d1517" alt="FFmpeg required">
+  <img src="https://img.shields.io/badge/yt--dlp-2026.10.26-e0475b?style=flat&labelColor=1d1517" alt="yt-dlp 2026.10.26">
   <img src="https://img.shields.io/badge/MP3-128%E2%80%93320%20kbps-e0475b?style=flat&labelColor=1d1517" alt="MP3 from 128 to 320 kbps">
-  <img src="https://img.shields.io/badge/one%20file-downloader.py-e0475b?style=flat&labelColor=1d1517" alt="One file: downloader.py">
+  <img src="https://img.shields.io/badge/M4A-no%20FFmpeg-e0475b?style=flat&labelColor=1d1517" alt="M4A without FFmpeg">
+  <img src="https://img.shields.io/badge/GUI-on%20the%20roadmap-e0475b?style=flat&labelColor=1d1517" alt="GUI on the roadmap">
   <img src="https://img.shields.io/badge/license-MIT-e0475b?style=flat&labelColor=1d1517" alt="MIT license">
 </p>
 
@@ -27,55 +27,64 @@
 | You want to | Go to |
 |---|---|
 | **Download a playlist now** | [Install](#install), then [Usage](#usage): two commands and a link. |
-| **Know what ends up on disk** | [How it works](#how-it-works): file names, tags and skipped tracks. |
+| **Know what ends up on disk** | [How it works](#how-it-works): file names, tags, skipped tracks and re-runs. |
 | **Download age-restricted or private videos** | [Browser cookies](#browser-cookies): use the session you are already signed in with. |
-| **Something went wrong** | [Questions](#questions-people-ask): FFmpeg, gaps in the numbering, `NA` files. |
+| **Use it from your own Python code** | [Development](#development): the `ytmpd` package and its events. |
+| **Something went wrong** | [Questions](#questions-people-ask): FFmpeg, gaps in the numbering, `NA` files, HTTP 403. |
 
 [How it works](#how-it-works) · [Install](#install) · [Usage](#usage) · [Browser cookies](#browser-cookies) ·
-[Development](#development) · [Questions](#questions-people-ask)
+[Development](#development) · [Roadmap](ROADMAP.md) · [Questions](#questions-people-ask)
 
 ## How it works
 
 You give the script the link of a playlist. It hands it to [yt-dlp](https://github.com/yt-dlp/yt-dlp), downloads the
-best available audio of each video and has FFmpeg convert it to MP3.
+best available audio of each video and saves it as MP3 or M4A.
 
 | Step | What the script does |
 |---|---|
-| **1. Check** | Stops with exit code 2 if `ffmpeg` is not on the PATH, before downloading anything. |
+| **1. Check** | For MP3, stops with exit code 2 if `ffmpeg` is not on the PATH, before downloading anything. |
 | **2. Link** | A link from `music.youtube.com` or `youtube.com` with a `list=` parameter becomes `https://www.youtube.com/playlist?list=…`, so a link copied from a song playing inside the playlist works too. |
-| **3. Download** | Takes the best audio stream. It asks YouTube as the mobile web client first (`mweb`) and falls back to the default one, because YouTube is moving more traffic to SABR streaming, which some clients handle badly. |
-| **4. Convert** | FFmpeg turns the audio into MP3 at the bitrate you chose (192 kbps unless you say otherwise). |
-| **5. Tag** | Writes the title, artist and the other metadata YouTube provides as ID3v2.3 tags, the version Windows Explorer and older players read. No cover art. |
+| **3. Download** | Takes the best audio stream. YouTube hides its streams behind a JavaScript challenge: yt-dlp solves it with Deno, Node.js, QuickJS or Bun, whichever is installed. |
+| **4. Convert** | **MP3**: FFmpeg converts the audio at the bitrate you chose (192 kbps unless you say otherwise). **M4A**: YouTube's own AAC stream is saved as it is, with no conversion and no quality lost. |
+| **5. Tag** | Title and artist (and album, when YouTube Music knows it). MP3s get ID3v2.3 tags, the version Windows Explorer and older players read. No cover art. |
 | **6. Skip** | A video that is deleted, private or blocked in your country is skipped and the rest of the playlist goes on. |
+| **7. Remember** | Each downloaded track is written to `.ytmpd-archive.txt` in the output folder. Running the same playlist again downloads only the tracks added since. |
 
 The files land in `downloads/` with the playlist position in front of the title:
 
 ```text
 downloads/
+├── .ytmpd-archive.txt
 ├── 001 - Jain - Makeba (Ian Asher Remix).mp3
 ├── 002 - Felix Jaehn, Whitney Houston - It's Not Right But It's Okay (Official Video).mp3
 ├── 004 - David Guetta & Bebe Rexha - I'm Good (Blue) [Djs From Mars Remix] [VISUALIZER].mp3
 └── …
 ```
 
-The progress line shows percentage, speed and time left for the track being downloaded. The messages are in Italian.
+For each track the terminal shows the title, then percentage, speed and time left, then the saved file name. The
+messages are in Italian.
 
 ## Install
 
-You need Python 3.10 or later and FFmpeg.
+You need Python 3.10 or later. FFmpeg is needed only for MP3, and a JavaScript runtime (Deno or Node.js) is strongly
+recommended: without one, YouTube serves fewer formats and some downloads fail.
 
 ```bash
 python -m pip install -r requirements.txt
 ffmpeg -version
+node --version     # or: deno --version
 ```
 
-If the second command isn't found, install FFmpeg (on Windows `winget install Gyan.FFmpeg`) and open a new terminal so
-the PATH is reloaded.
+| Missing | Install it with (Windows) |
+|---|---|
+| FFmpeg | `winget install Gyan.FFmpeg`, then open a new terminal so the PATH is reloaded |
+| Deno | `winget install DenoLand.Deno` |
+| Node.js | `winget install OpenJS.NodeJS.LTS` |
 
 YouTube changes often and old versions of yt-dlp stop working, so update it whenever downloads start failing:
 
 ```bash
-python -m pip install -U yt-dlp
+python -m pip install -U "yt-dlp[default]"
 python -m yt_dlp --version
 ```
 
@@ -88,14 +97,18 @@ python downloader.py "https://music.youtube.com/playlist?list=..."
 | Option | Values | Default | What it does |
 |---|---|---|---|
 | `url` | a playlist link | | The playlist to download. Put it in quotes: the `&` in some links breaks the command otherwise. |
-| `-o`, `--output` | a folder | `downloads` | Where the MP3s go. The folder is created if it doesn't exist. |
-| `-b`, `--bitrate` | `128`, `192`, `256`, `320` | `192` | MP3 bitrate in kbps. |
+| `-o`, `--output` | a folder | `downloads` | Where the files go. The folder is created if it doesn't exist. |
+| `-f`, `--format` | `mp3`, `m4a` | `mp3` | MP3 (needs FFmpeg) or M4A (the original AAC audio, no FFmpeg). |
+| `-b`, `--bitrate` | `128`, `192`, `256`, `320` | `192` | MP3 bitrate in kbps. Ignored with M4A. |
 | `--browser` | `none`, `chrome`, `edge`, `firefox`, `brave`, `opera`, `vivaldi` | `none` | Browser whose cookies yt-dlp reads. See [Browser cookies](#browser-cookies). |
+| `--items` | positions, e.g. `1,3,5-8` | all | Download only these tracks. |
+| `--list` | | | Print the tracks with their position and duration, without downloading. |
 
 ```bash
-python downloader.py "URL" -b 320                       # best quality
-python downloader.py "URL" -o "D:\Music\Summer 2026"    # another folder
-python downloader.py "URL" --browser firefox -b 256     # with Firefox cookies
+python downloader.py "URL" --list                       # see what's in it
+python downloader.py "URL" --items 1-10 -b 320          # first ten tracks, best MP3 quality
+python downloader.py "URL" -f m4a -o "D:\Music\Summer"  # original audio, another folder
+python downloader.py "URL" --browser firefox            # with Firefox cookies
 ```
 
 ## Browser cookies
@@ -119,22 +132,48 @@ explains how to export cookies from a private window that stay valid longer.
 
 ## Development
 
-The whole program is [`downloader.py`](downloader.py), about 170 lines with a single dependency.
+The code is in the `ytmpd` package: `core` does the work and prints nothing, `cli` is the command line on top of it.
+The GUI planned in the [roadmap](ROADMAP.md) will use `core` the same way.
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate        # Windows; on macOS and Linux: source .venv/bin/activate
 python -m pip install -r requirements.txt
-python downloader.py --help
+python -m unittest            # tests, no network needed
 ```
+
+```python
+import threading
+from ytmpd import core
+
+cancel = threading.Event()        # cancel.set() from another thread stops the download
+result = core.download("https://music.youtube.com/playlist?list=...", "downloads", fmt="m4a",
+                       on_event=print, cancel=cancel)
+# result == {"type": "finished", "done": 12, "skipped": 1, "cancelled": False}
+```
+
+| Event `type` | Other keys | When |
+|---|---|---|
+| `track_started` | `index`, `title` | The first bytes of a track arrive |
+| `progress` | `index`, `percent`, `speed` (bytes/s), `eta` (s) | Several times per second while downloading; any of them can be `None` |
+| `track_done` | `index`, `title`, `path` | The file is in its final place, tagged |
+| `track_skipped` | `reason` | yt-dlp gave up on a video |
+| `warning` | `message` | yt-dlp warned about something, e.g. no JavaScript runtime |
+| `finished` | `done`, `skipped`, `cancelled` | Always last; also the return value |
+
+`core.list_playlist(url)` returns the playlist title and its tracks (`index`, `id`, `title`, `duration`, `thumbnail`)
+in a few seconds, without downloading.
 
 <details>
 <summary><b>Project layout</b></summary>
 
 | Path | Contents |
 |---|---|
-| `downloader.py` | Command-line options, link normalization, yt-dlp options and the progress line |
-| `requirements.txt` | `yt-dlp`, the only dependency |
+| `ytmpd/core.py` | Link normalization, yt-dlp options, playlist listing, download with events and cancel, M4A tags |
+| `ytmpd/cli.py` | Command-line options and the Italian messages |
+| `downloader.py` | Two-line wrapper, so `python downloader.py` keeps working |
+| `tests/test_core.py` | Tests for links, options and tags (`python -m unittest`) |
+| `requirements.txt` | `yt-dlp[default]`, which brings `yt-dlp-ejs` (the JavaScript challenge solver) and `mutagen` (M4A tags) |
 | `ROADMAP.md` | Plan for the desktop and Android GUI app |
 | `docs/` | Logo for this README |
 | `downloads/` | Default output folder, ignored by git |
@@ -146,10 +185,10 @@ python downloader.py --help
 
 | You want to change | Look at |
 |---|---|
-| File name pattern | `outtmpl` in `build_options()`. The fields are [yt-dlp's output template](https://github.com/yt-dlp/yt-dlp#output-template) ones. |
-| Embedding the cover art | `writethumbnail` in `build_options()`, plus the `EmbedThumbnail` postprocessor. |
-| Which YouTube client to ask first | `player_client` in `extractor_args`. |
-| Supported browsers | The `BROWSERS` tuple at the top of the file. |
+| File name pattern | `outtmpl` in `core.build_options()`. The fields are [yt-dlp's output template](https://github.com/yt-dlp/yt-dlp#output-template) ones. |
+| Which tags are written | `core.tags_for()` for M4A; the `FFmpegMetadata` postprocessor for MP3. |
+| Embedding the cover art | `writethumbnail` in `core.build_options()`, plus the `EmbedThumbnail` postprocessor. |
+| Supported browsers and formats | `BROWSERS` and `FORMATS` at the top of `core.py`. |
 
 </details>
 
@@ -158,9 +197,9 @@ python downloader.py --help
 
 | Code | Meaning |
 |---|---|
-| `0` | Everything downloaded. |
-| `1` | yt-dlp reported at least one error (for example a skipped video), or the download stopped on an unexpected error. |
-| `2` | FFmpeg is not on the PATH. |
+| `0` | Everything downloaded (or already in the archive). |
+| `1` | At least one track was skipped, or the download stopped on an unexpected error. |
+| `2` | MP3 chosen and FFmpeg is not on the PATH. |
 
 </details>
 
@@ -170,7 +209,7 @@ python downloader.py --help
 <summary><b>"FFmpeg non è presente nel PATH", but I installed it.</b></summary>
 
 The terminal reads the PATH when it opens. Close it, open a new one and try `ffmpeg -version`. If it still isn't found,
-the folder with `ffmpeg.exe` (usually a `bin` folder) has to be added to the PATH by hand.
+the folder with `ffmpeg.exe` (usually a `bin` folder) has to be added to the PATH by hand. Or skip FFmpeg with `-f m4a`.
 
 </details>
 
@@ -178,7 +217,8 @@ the folder with `ffmpeg.exe` (usually a `bin` folder) has to be added to the PAT
 <summary><b>Some numbers are missing, for example there is no 003.</b></summary>
 
 That video couldn't be downloaded: deleted, private, blocked in your country or restricted. The number is its position
-in the playlist, so the gap stays. If it was a sign-in problem, try again with `--browser`.
+in the playlist, so the gap stays. If it was a sign-in problem, try again with `--browser`: the tracks already
+downloaded are skipped.
 
 </details>
 
@@ -191,10 +231,19 @@ playlist link, the one with `list=`.
 </details>
 
 <details>
+<summary><b>I ran it again and it downloaded nothing.</b></summary>
+
+Everything was already in `.ytmpd-archive.txt`. To download a track again, delete its line from that file (or delete
+the file to start over). Folders filled by versions before the archive existed get downloaded again once.
+
+</details>
+
+<details>
 <summary><b>Downloads fail with "Sign in to confirm you're not a bot" or HTTP 403.</b></summary>
 
-Update yt-dlp first (`python -m pip install -U yt-dlp`): it's the most common fix after a change on YouTube's side. If it
-keeps happening, use `--browser` with a browser where you are signed in.
+A single 403 can be YouTube having a bad moment: run the command again, the tracks already done are skipped. If it
+keeps happening, update yt-dlp (`python -m pip install -U "yt-dlp[default]"`), check that Deno or Node.js is
+installed, and then try `--browser` with a browser where you are signed in.
 
 </details>
 

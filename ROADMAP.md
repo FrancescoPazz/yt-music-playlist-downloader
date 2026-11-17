@@ -7,7 +7,7 @@ riskiest part (Android) is tested before the interface is built.
 | Phase | Result | Platforms |
 |---|---|---|
 | [0. Stack](#phase-0--choose-the-stack) | One codebase in Python with Flet | |
-| [1. Core](#phase-1--a-core-the-gui-can-call) | `downloader.py` split into a reusable core, the CLI keeps working | CLI |
+| [1. Core](#phase-1--a-core-the-gui-can-call) ✅ | `downloader.py` split into a reusable core, the CLI keeps working | CLI |
 | [2. Android spike](#phase-2--android-spike) | One track downloaded on a real phone, or a decision to change plan | Android |
 | [3. Desktop MVP](#phase-3--desktop-mvp) | A window that does what the CLI does today, plus a track list | Windows |
 | [4. Android app](#phase-4--android-app) | The same app on the phone, with sharing from YouTube Music | Android |
@@ -34,6 +34,10 @@ The Play Store does not accept apps that download from YouTube, so the APK is di
 diario-yaz.
 
 ## Phase 1 — A core the GUI can call
+
+**Done.** Two things turned up along the way: the old script never wrote tags (`addmetadata` is a command-line
+option of yt-dlp, ignored when called from Python), and forcing the `mweb` client now costs a warning per track
+because it needs a PO Token, so the core lets yt-dlp choose its clients.
 
 Today `downloader.py` prints to the terminal. A GUI needs functions that report events and can be stopped.
 
@@ -69,7 +73,7 @@ before any real UI is written.
 | Question | What counts as yes | If no |
 |---|---|---|
 | Does yt-dlp run inside a Flet APK? | It lists a public playlist on the phone | Fallback: Kotlin + youtubedl-android |
-| Is there a JavaScript runtime? | yt-dlp solves YouTube's challenge with QuickJS (or Deno) shipped in the APK | Try `mweb`-only formats; otherwise fallback |
+| Is there a JavaScript runtime? | yt-dlp solves YouTube's challenge with QuickJS (or Deno) shipped in the APK | Fallback: Kotlin + youtubedl-android |
 | Can the app run FFmpeg? | A static arm64 `ffmpeg` shipped in the APK converts one file | Android stays on M4A only, MP3 comes later |
 | Where do files go? | The user picks a folder (e.g. `Music/`) and the file shows up in a music player | Save to the app's folder and share from there |
 | Does a 50-track playlist finish with the screen off? | Yes, or it does with "keep screen on" | Accept "keep the app open" for v1; a foreground service goes to phase 7 |
