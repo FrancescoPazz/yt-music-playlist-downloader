@@ -90,8 +90,9 @@ class App:
         page.dark_theme = ft.Theme(color_scheme_seed=SEED)
         self.apply_theme()
         self.render()
-        if len(sys.argv) > 1:  # `python main.py LINK` (also "Open with" / share) loads it right away
-            self.url = sys.argv[1]
+        # Not sys.argv: in the packaged app Flet's runner takes the first argument as the page URL.
+        if os.getenv("YTMPD_URL"):
+            self.url = os.environ["YTMPD_URL"]
             self.load()
         else:
             page.run_task(self.prefill_from_clipboard)
