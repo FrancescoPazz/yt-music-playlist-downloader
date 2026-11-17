@@ -81,17 +81,26 @@ messages are in Italian.
 | **Settings** | Browser cookies (see [Browser cookies](#browser-cookies)), language (Italian, English or the system's), theme (light, dark or the system's), and the versions of yt-dlp, FFmpeg and the JavaScript runtime in use. |
 
 The app uses its own FFmpeg (from the `imageio-ffmpeg` package) when there is none on the PATH, so MP3 works without
-installing anything else. Settings and history are saved in `.ytmpd` in your user folder.
+installing anything else. Settings and history are saved in
+`%APPDATA%\Francesco Pazzaglia\YT Music Playlist Downloader\data` by the packaged app, and in `.ytmpd` in your user
+folder when it runs from the source code.
 
 A ready-made `.exe` comes with [phase 5 of the roadmap](ROADMAP.md#phase-5--builds-and-releases). Until then, run it
 from the source code:
 
 ```bash
 python -m pip install -r requirements.txt "flet[all]==1.1.2" imageio-ffmpeg
-python main.py              # or: python main.py "https://music.youtube.com/playlist?list=..." to load it right away
+python main.py              # with YTMPD_URL set to a playlist link, it loads that link right away
 ```
 
 The first start downloads the Flet window runtime once (about a minute).
+
+To build the Windows app yourself you need Visual Studio Build Tools 2022 with the C++ desktop workload and Windows
+Developer Mode turned on (Flutter uses symlinks):
+
+```bash
+PYTHONUTF8=1 flet build windows --yes   # output in build/windows, about 210 MB with Python and FFmpeg
+```
 
 ## Install
 

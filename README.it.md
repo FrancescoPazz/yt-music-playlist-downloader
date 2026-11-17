@@ -80,17 +80,26 @@ Per ogni brano il terminale mostra il titolo, poi percentuale, velocità e tempo
 | **Impostazioni** | Cookie del browser (vedi [Cookie del browser](#cookie-del-browser)), lingua (italiano, inglese o quella del sistema), tema (chiaro, scuro o quello del sistema), e le versioni di yt-dlp, FFmpeg e del runtime JavaScript in uso. |
 
 L'app usa un suo FFmpeg (dal pacchetto `imageio-ffmpeg`) quando nel PATH non ce n'è uno, quindi l'MP3 funziona senza
-installare altro. Impostazioni e cronologia sono salvate in `.ytmpd` nella cartella utente.
+installare altro. Impostazioni e cronologia sono salvate in
+`%APPDATA%\Francesco Pazzaglia\YT Music Playlist Downloader\data` dall'app impacchettata, e in `.ytmpd` nella
+cartella utente quando si avvia dal codice sorgente.
 
 Un `.exe` pronto arriva con la [fase 5 della roadmap](ROADMAP.md#phase-5--builds-and-releases). Fino ad allora si avvia
 dal codice sorgente:
 
 ```bash
 python -m pip install -r requirements.txt "flet[all]==1.1.2" imageio-ffmpeg
-python main.py              # oppure: python main.py "https://music.youtube.com/playlist?list=..." per caricarla subito
+python main.py              # se YTMPD_URL contiene il link di una playlist, la carica subito
 ```
 
 Al primo avvio Flet scarica una volta il suo runtime per le finestre (circa un minuto).
+
+Per compilare tu l'app Windows servono Visual Studio Build Tools 2022 con il carico di lavoro C++ per desktop e la
+Modalità sviluppatore di Windows attiva (Flutter usa i collegamenti simbolici):
+
+```bash
+PYTHONUTF8=1 flet build windows --yes   # risultato in build/windows, circa 210 MB con Python e FFmpeg
+```
 
 ## Installazione
 

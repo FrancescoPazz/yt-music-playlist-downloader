@@ -5,3 +5,4 @@ downloads/
 venv/
 spike/android/ytmpd/
 spike/android/build/
+build/

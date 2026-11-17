@@ -1,5 +1,33 @@
 # Devlog
 
+## 2026-11-18 — Phase 3: desktop app
+
+The Flet app (`main.py`, `ytmpd/gui.py`) was tested three ways: a script driving `App` with a fake page and real
+downloads, the window run from source with screenshots, and the packaged `.exe` from `flet build windows`.
+
+### What the tests found
+
+| Found | Fix |
+|---|---|
+| YouTube sometimes answers the first download with HTTP 403; five downloads in a row then worked. | `core.download()` runs a second pass for 403s only; the archive skips the tracks already done. |
+| A 403 message has no video id, so the GUI didn't know which row failed and history saved `null` as title. | A `pre_process` postprocessor remembers the video being processed; errors without an id are attributed to it. |
+| `settings.json` written by Windows PowerShell 5.1 starts with a BOM and failed to load, silently resetting the settings. | Read with `utf-8-sig`. |
+| A link to a missing playlist showed "Unexpected error". | New reason kind `not_found`. |
+| In the packaged app, a command-line argument leaves the window blank. Flet's runner uses `args[0]` as the page URL and never starts Python. | The startup link comes from the `YTMPD_URL` environment variable instead of `sys.argv`. |
+
+### Windows build notes
+
+- Needs Visual Studio Build Tools 2022 (C++ desktop workload) and Developer Mode. Developer Mode was off again
+  by the time of the Windows build, after working for the Android one; check `AllowDevelopmentWithoutDevLicense` under
+  `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock` if Flutter asks for it again. PowerShell 5.1's
+  `New-Item -ItemType SymbolicLink` needs admin even with Developer Mode; `cmd /c mklink` is the right test.
+- Output: `build/windows`, 210 MB (Python 3.14, yt-dlp, the 100 MB FFmpeg from `imageio-ffmpeg`); 85 MB zipped.
+- The first start after a build takes 25–40 s while Python unpacks; later starts show the UI in about 3 s.
+- The packaged app keeps its data in `%APPDATA%\Francesco Pazzaglia\YT Music Playlist Downloader\data`
+  (`FLET_APP_STORAGE_DATA`) and its Python console in `%LOCALAPPDATA%\Francesco Pazzaglia\YT Music Playlist Downloader\console.log`.
+- Faking the user folder (`USERPROFILE`) to keep test files out of the real one breaks the packaged app
+  (`MissingPlatformDirectoryException`); point the download folder in `settings.json` somewhere else instead.
+
 ## 2026-11-17 — Phase 2: Android spike
 
 A throwaway Flet app ([`spike/android/main.py`](spike/android/main.py)) that imports `ytmpd.core` and runs every check
