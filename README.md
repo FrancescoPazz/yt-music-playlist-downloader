@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/FFmpeg-required-e0475b?style=flat&labelColor=1d1517" alt="FFmpeg required">
   <img src="https://img.shields.io/badge/MP3-128%E2%80%93320%20kbps-e0475b?style=flat&labelColor=1d1517" alt="MP3 from 128 to 320 kbps">
   <img src="https://img.shields.io/badge/one%20file-downloader.py-e0475b?style=flat&labelColor=1d1517" alt="One file: downloader.py">
+  <img src="https://img.shields.io/badge/license-MIT-e0475b?style=flat&labelColor=1d1517" alt="MIT license">
 </p>
 
 ## Start here
@@ -198,3 +199,5 @@ keeps happening, use `--browser` with a browser where you are signed in.
 
 Use it only for content you are allowed to download, following YouTube's terms of service and the copyright of each
 track.
+
+Released under the [MIT license](LICENSE).

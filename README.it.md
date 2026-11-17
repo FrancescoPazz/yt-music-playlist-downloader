@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/FFmpeg-richiesto-e0475b?style=flat&labelColor=1d1517" alt="FFmpeg richiesto">
   <img src="https://img.shields.io/badge/MP3-128%E2%80%93320%20kbps-e0475b?style=flat&labelColor=1d1517" alt="MP3 da 128 a 320 kbps">
   <img src="https://img.shields.io/badge/un%20file-downloader.py-e0475b?style=flat&labelColor=1d1517" alt="Un solo file: downloader.py">
+  <img src="https://img.shields.io/badge/license-MIT-e0475b?style=flat&labelColor=1d1517" alt="MIT license">
 </p>
 
 ## Da dove partire
@@ -199,3 +200,5 @@ comune. Se continua, usa `--browser` con un browser in cui hai fatto l'accesso.
 
 Usalo solo per contenuti che hai il diritto di scaricare, rispettando i termini di servizio di YouTube e il diritto
 d'autore di ogni brano.
+
+Rilasciato con [licenza MIT](LICENSE).
