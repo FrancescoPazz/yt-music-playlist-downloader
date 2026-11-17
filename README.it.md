@@ -84,8 +84,12 @@ installare altro. Impostazioni e cronologia sono salvate in
 `%APPDATA%\Francesco Pazzaglia\YT Music Playlist Downloader\data` dall'app impacchettata, e in `.ytmpd` nella
 cartella utente quando si avvia dal codice sorgente.
 
-Un `.exe` pronto arriva con la [fase 5 della roadmap](ROADMAP.md#phase-5--builds-and-releases). Fino ad allora si avvia
-dal codice sorgente:
+**Su Windows**, scarica `yt-music-playlist-downloader-windows.zip` dalle
+[Release](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases), estrailo e fai doppio clic su
+`yt-music-playlist-downloader.exe`: Python, yt-dlp e FFmpeg sono già dentro. SmartScreen può avvisare che l'app non è
+firmata (**Ulteriori informazioni** → **Esegui comunque**), e il primo avvio richiede fino a 40 secondi.
+
+**Dal codice sorgente**, su qualsiasi sistema:
 
 ```bash
 python -m pip install -r requirements.txt "flet[all]==1.1.2" imageio-ffmpeg
