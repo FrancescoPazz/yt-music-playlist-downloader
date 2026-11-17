@@ -175,6 +175,8 @@ in a few seconds, without downloading.
 | `tests/test_core.py` | Tests for links, options and tags (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, which brings `yt-dlp-ejs` (the JavaScript challenge solver) and `mutagen` (M4A tags) |
 | `ROADMAP.md` | Plan for the desktop and Android GUI app |
+| `DEVLOG.md` | What each phase found out, starting from the Android spike |
+| `spike/android/` | Throwaway Flet app used to test `ytmpd.core` on Android |
 | `docs/` | Logo for this README |
 | `downloads/` | Default output folder, ignored by git |
 

@@ -175,6 +175,8 @@ result = core.download("https://music.youtube.com/playlist?list=...", "downloads
 | `tests/test_core.py` | Test su link, opzioni e tag (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, che porta con sé `yt-dlp-ejs` (il risolutore della verifica JavaScript) e `mutagen` (tag M4A) |
 | `ROADMAP.md` | Piano per l'app con interfaccia grafica, desktop e Android |
+| `DEVLOG.md` | Cosa ha scoperto ogni fase, a partire dalla prova su Android |
+| `spike/android/` | App Flet usa e getta per provare `ytmpd.core` su Android |
 | `docs/` | Logo di questo README |
 | `downloads/` | Cartella di output predefinita, ignorata da git |
 

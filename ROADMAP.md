@@ -8,7 +8,7 @@ riskiest part (Android) is tested before the interface is built.
 |---|---|---|
 | [0. Stack](#phase-0--choose-the-stack) | One codebase in Python with Flet | |
 | [1. Core](#phase-1--a-core-the-gui-can-call) ✅ | `downloader.py` split into a reusable core, the CLI keeps working | CLI |
-| [2. Android spike](#phase-2--android-spike) | One track downloaded on a real phone, or a decision to change plan | Android |
+| [2. Android spike](#phase-2--android-spike) ✅ | One track downloaded on a real phone, or a decision to change plan | Android |
 | [3. Desktop MVP](#phase-3--desktop-mvp) | A window that does what the CLI does today, plus a track list | Windows |
 | [4. Android app](#phase-4--android-app) | The same app on the phone, with sharing from YouTube Music | Android |
 | [5. Releases](#phase-5--builds-and-releases) | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
@@ -67,6 +67,11 @@ Today `downloader.py` prints to the terminal. A GUI needs functions that report 
 
 ## Phase 2 — Android spike
 
+**Done** on the emulator (Android 16, x86_64); results in [DEVLOG.md](DEVLOG.md). Flet is confirmed: yt-dlp runs,
+M4A downloads and is tagged without FFmpeg, and finished files can be copied into `Music/` with no permission. Still
+open: a JavaScript runtime on Android (it works without one for now, but yt-dlp has deprecated that), and long
+playlists with the screen off on a real phone.
+
 A throwaway Flet app with one text field and one button, to answer the questions that decide whether the plan holds,
 before any real UI is written.
 
@@ -107,11 +112,15 @@ The same screens, laid out for a phone (navigation bar at the bottom), plus what
 
 1. **Share from YouTube Music**: "Share → YT Music Playlist Downloader" opens the app with the link already filled in.
    This needs an intent filter for `text/plain` in the Android manifest; check how far Flet lets us customize it.
-2. **Folder**: chosen once with the system picker and remembered; files appear in music players.
+2. **Folder**: files go to `Music/` (or a subfolder), where Android accepts audio files without any permission.
+   yt-dlp downloads into app storage and moves only the finished `.m4a` there (`paths` option); the archive stays in
+   app storage, because `Music/` refuses non-audio files.
 3. **Sign-in**: the browser's cookies can't be read on Android. v1: import a `cookies.txt` exported from a computer.
    Later: sign in to YouTube in a WebView inside the app and pass those cookies to yt-dlp.
 4. **Long downloads**: keep the screen on during the download (or the foreground service, if phase 2 found a way).
 5. **Mobile data**: warning before downloading on a metered connection.
+6. **JavaScript runtime**: ship a QuickJS binary for arm64 as a native library (`libqjs.so`) and pass its path in
+   `js_runtimes`, so the app keeps working when yt-dlp drops extraction without a runtime.
 
 **Done when** a playlist shared from the YouTube Music app ends up in the phone's music player.
 
