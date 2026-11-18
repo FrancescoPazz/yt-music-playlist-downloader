@@ -46,6 +46,29 @@ class BuildOptions(unittest.TestCase):
         self.assertEqual(opts["playlist_items"], "1,3-5")
         self.assertIn("node", opts["js_runtimes"])
 
+    def test_android_layout_temp_and_archive_elsewhere(self):
+        opts = core.build_options("music", "m4a", temp_dir="tmp", archive="data/a.txt")
+        self.assertEqual(opts["paths"], {"home": "music", "temp": "tmp"})
+        self.assertEqual(opts["download_archive"], "data/a.txt")
+        self.assertNotIn("/", opts["outtmpl"])  # relative, so yt-dlp applies paths
+
+    def test_cookies_file_wins_over_browser(self):
+        opts = core.build_options("out", browser="chrome", cookies="c.txt")
+        self.assertEqual(opts["cookiefile"], "c.txt")
+        self.assertNotIn("cookiesfrombrowser", opts)
+
+    def test_quickjs_from_android_native_dir(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "libqjs.so").write_bytes(b"")
+            with mock.patch.dict(os.environ, {"ANDROID_NATIVE_LIBRARY_DIR": d}):
+                self.assertEqual(core.js_runtimes()["quickjs"], {"path": str(Path(d) / "libqjs.so")})
+        self.assertEqual(core.js_runtimes()["quickjs"], {})
+
     def test_unknown_format(self):
         with self.assertRaises(ValueError):
             core.build_options("out", "flac")
@@ -96,9 +119,10 @@ class Archive(unittest.TestCase):
         from pathlib import Path
 
         with tempfile.TemporaryDirectory() as d:
-            self.assertEqual(core.archived_ids(d), set())
-            (Path(d) / core.ARCHIVE).write_text("youtube jNQXAC9IVRw\nyoutube abcdefghijk\n\n", encoding="utf-8")
-            self.assertEqual(core.archived_ids(d), {"jNQXAC9IVRw", "abcdefghijk"})
+            archive = core.archive_path(d)
+            self.assertEqual(core.archived_ids(archive), set())
+            archive.write_text("youtube jNQXAC9IVRw\nyoutube abcdefghijk\n\n", encoding="utf-8")
+            self.assertEqual(core.archived_ids(archive), {"jNQXAC9IVRw", "abcdefghijk"})
 
 
 class RetryAfter403(unittest.TestCase):

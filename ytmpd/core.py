@@ -4,6 +4,7 @@ Nothing here prints: progress is reported as event dicts to `on_event`, so the C
 Use only for content you are authorized to download.
 """
 
+import os
 import re
 import shutil
 from pathlib import Path
@@ -20,6 +21,21 @@ ARCHIVE = ".ytmpd-archive.txt"
 # yt-dlp needs a JavaScript runtime for YouTube and enables only Deno by default.
 # Enabling all of them lets it use whichever is installed (priority: deno, node, quickjs, bun).
 JS_RUNTIMES = {"deno": {}, "node": {}, "quickjs": {}, "bun": {}}
+
+
+def js_runtimes() -> dict:
+    """Every runtime yt-dlp supports; on Android, the QuickJS binary the app ships as a native library."""
+    runtimes = dict(JS_RUNTIMES)
+    native = os.environ.get("ANDROID_NATIVE_LIBRARY_DIR")  # set by Flet's Python on Android
+    if native and (Path(native) / "libqjs.so").is_file():
+        runtimes["quickjs"] = {"path": str(Path(native) / "libqjs.so")}
+    return runtimes
+
+
+def js_runtime_names() -> list[str]:
+    """The JavaScript runtimes found on this device, for the GUI's Settings."""
+    names = [n for n in ("deno", "node", "qjs", "bun") if shutil.which(n)]
+    return names + (["quickjs"] if "path" in js_runtimes()["quickjs"] else [])
 
 
 def normalize_url(url: str) -> str:
@@ -46,10 +62,15 @@ def ffmpeg_available() -> bool:
     return shutil.which("ffmpeg") is not None or bundled_ffmpeg() is not None
 
 
-def archived_ids(output_dir: str) -> set[str]:
-    """Video ids already downloaded into output_dir, read from its archive ("youtube <id>" per line)."""
+def archive_path(output_dir: str) -> Path:
+    """Where the list of downloaded videos lives by default: next to the files."""
+    return Path(output_dir) / ARCHIVE
+
+
+def archived_ids(archive: str | Path) -> set[str]:
+    """Video ids listed in an archive file ("youtube <id>" per line)."""
     try:
-        lines = (Path(output_dir) / ARCHIVE).read_text(encoding="utf-8").splitlines()
+        lines = Path(archive).read_text(encoding="utf-8").splitlines()
     except FileNotFoundError:
         return set()
     return {line.split()[-1] for line in lines if line.strip()}
@@ -82,23 +103,33 @@ def video_id_in(message: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _base_options(browser: str) -> dict:
+def _base_options(browser: str, cookies: str | None = None) -> dict:
     opts = {
         "quiet": True,
         "noprogress": True,
-        "js_runtimes": JS_RUNTIMES,
+        "js_runtimes": js_runtimes(),
     }
-    if browser != "none":
+    if cookies:  # a cookies.txt file wins over the browser: it's the only way on Android
+        opts["cookiefile"] = str(cookies)
+    elif browser != "none":
         opts["cookiesfrombrowser"] = (browser,)
     return opts
 
 
 def build_options(output_dir: str, fmt: str = "mp3", bitrate: str = "192", browser: str = "none",
-                  items: str | None = None) -> dict:
-    """yt-dlp options without hooks. `items` uses yt-dlp's syntax, e.g. "1,3,5-8"."""
-    opts = _base_options(browser) | {
-        "outtmpl": str(Path(output_dir) / "%(playlist_index)03d - %(title)s.%(ext)s"),
-        "download_archive": str(Path(output_dir) / ARCHIVE),
+                  items: str | None = None, *, cookies: str | None = None, temp_dir: str | None = None,
+                  archive: str | None = None) -> dict:
+    """yt-dlp options without hooks. `items` uses yt-dlp's syntax, e.g. "1,3,5-8".
+
+    temp_dir: where partial files are downloaded and tagged; only the finished file is moved to output_dir.
+    Android needs it: its Music folder refuses anything that isn't audio, such as `.part` files.
+    archive: the archive file, by default next to the files (Android keeps it in app storage, for the same reason).
+    """
+    paths = {"home": str(output_dir)} | ({"temp": str(temp_dir)} if temp_dir else {})
+    opts = _base_options(browser, cookies) | {
+        "paths": paths,
+        "outtmpl": "%(playlist_index)03d - %(title)s.%(ext)s",
+        "download_archive": str(archive or archive_path(output_dir)),
         "ignoreerrors": True,
         "nooverwrites": True,
     }
@@ -195,9 +226,9 @@ class _Current(PostProcessor):
         return [], info
 
 
-def list_playlist(url: str, browser: str = "none") -> dict:
+def list_playlist(url: str, browser: str = "none", cookies: str | None = None) -> dict:
     """Titles and durations of the tracks, without downloading. Takes seconds even for long playlists."""
-    opts = _base_options(browser) | {"extract_flat": "in_playlist", "skip_download": True,
+    opts = _base_options(browser, cookies) | {"extract_flat": "in_playlist", "skip_download": True,
                                      "logger": _Logger(lambda e: None)}  # errors still raise; nothing printed
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(normalize_url(url), download=False)
@@ -220,7 +251,8 @@ def list_playlist(url: str, browser: str = "none") -> dict:
 
 
 def download(url: str, output_dir: str = "downloads", fmt: str = "mp3", bitrate: str = "192",
-             browser: str = "none", items: str | None = None, on_event=lambda e: None, cancel=None) -> dict:
+             browser: str = "none", items: str | None = None, on_event=lambda e: None, cancel=None,
+             cookies: str | None = None, temp_dir: str | None = None, archive: str | None = None) -> dict:
     """Download the playlist into output_dir. Tracks already in the folder's archive are skipped.
 
     on_event gets dicts with "type": track_started, progress, track_done, track_skipped, warning, finished.
@@ -262,7 +294,8 @@ def download(url: str, output_dir: str = "downloads", fmt: str = "mp3", bitrate:
         })
 
     logger = _Logger(emit)
-    opts = build_options(output_dir, fmt, bitrate, browser, items) | {
+    opts = build_options(output_dir, fmt, bitrate, browser, items, cookies=cookies, temp_dir=temp_dir,
+                         archive=archive) | {
         "logger": logger,
         "progress_hooks": [progress_hook],
     }
