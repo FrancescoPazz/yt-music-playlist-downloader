@@ -44,6 +44,9 @@ def main(argv=None):
                         help="Browser da cui leggere i cookie. Usa 'none' per non usare cookie. Default: none.")
     parser.add_argument("--items", help="Solo questi brani, per posizione: es. 1,3,5-8")
     parser.add_argument("--list", action="store_true", help="Elenca i brani della playlist senza scaricarli")
+    parser.add_argument("--covers", action="store_true", help="Inserisce nel file la miniatura del video come copertina")
+    parser.add_argument("--clean-titles", action="store_true",
+                        help="Toglie \"(Official Video)\", \"[VISUALIZER]\" e simili da titolo e nome del file")
     args = parser.parse_args(argv)
 
     if args.list:
@@ -69,7 +72,7 @@ def main(argv=None):
 
     try:
         result = core.download(args.url, args.output, args.format, args.bitrate, args.browser, args.items,
-                               on_event=print_event)
+                               on_event=print_event, covers=args.covers, clean_titles=args.clean_titles)
     except Exception as exc:
         print(f"\nErrore: {exc}", file=sys.stderr)
         return 1

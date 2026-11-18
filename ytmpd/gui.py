@@ -30,6 +30,8 @@ DEFAULTS = {
     "browser": "none",
     "language": "auto",
     "theme": "system",
+    "covers": True,
+    "clean_titles": False,
 }
 HISTORY_LIMIT = 100
 COOKIES = DATA / "cookies.txt"
@@ -99,6 +101,7 @@ class App:
         self.last_line = ""  # result of the last load/download, shown under the list
         self.errors = []  # recent yt-dlp errors, for "Report a problem"
         self.update = None  # {"tag", "url"} when GitHub has a newer release
+        self.auto_start = False  # Sync: download the new tracks as soon as the playlist is loaded
         self.rows = {}  # id -> status Container, updated in place during downloads
         self.picker = ft.FilePicker()
         self.clipboard = ft.Clipboard()
@@ -396,7 +399,12 @@ class App:
             self.mark_archived()
         finally:
             self.loading = False
+            sync, self.auto_start = self.auto_start, False
+            if sync and self.playlist and not self.selected:
+                self.last_line = self.t("sync_nothing")
             self.render()
+        if sync and self.playlist and self.selected:
+            self.page.run_task(self.start, None)
 
     async def start(self, e):
         tracks = [t for t in self.playlist["tracks"] if t["id"] in self.selected]
@@ -451,7 +459,8 @@ class App:
             result = core.download(self.playlist["url"], str(out), fmt, self.settings["bitrate"],
                                    self.settings["browser"], items, on_event=self.on_event, cancel=self.cancel,
                                    cookies=self.cookies(), temp_dir=str(ANDROID_PARTIAL) if self.mobile else None,
-                                   archive=str(archive))
+                                   archive=str(archive), covers=self.settings["covers"],
+                                   clean_titles=self.settings["clean_titles"])
         except Exception as ex:
             self.last_line = self.t("download_failed", reason=self.reason(core.reason_kind(str(ex))))
             self.remember_error(str(ex))
@@ -537,12 +546,14 @@ class App:
                           on_click=lambda e, f=h["folder"]: open_folder(f), disabled=not Path(h["folder"]).is_dir()),
             ft.TextButton(self.t("load_again"), icon=ft.Icons.REFRESH,
                           on_click=lambda e, u=h["url"]: self.load_again(u), disabled=self.downloading),
-        ])
+            ft.TextButton(self.t("sync"), icon=ft.Icons.SYNC, tooltip=self.t("sync_help"),
+                          on_click=lambda e, u=h["url"]: self.load_again(u, sync=True), disabled=self.downloading),
+        ], wrap=True)
         return ft.Container(ft.Column(lines + [actions], spacing=4), padding=16, border_radius=12,
                             bgcolor=ft.Colors.SURFACE_CONTAINER_LOW)
 
-    def load_again(self, url):
-        self.url, self.tab = url, 0
+    def load_again(self, url, sync=False):
+        self.url, self.tab, self.auto_start = url, 0, sync
         self.load()
 
     # ---- Settings ------------------------------------------------------------------------------------------
@@ -573,7 +584,15 @@ class App:
                               disabled=self.downloading),
             ], wrap=True),
             ft.Text(self.t("cookies_help"), color=ft.Colors.ON_SURFACE_VARIANT))
+        files = section(
+            self.t("files"),
+            ft.Switch(label=self.t("covers"), value=self.settings["covers"], disabled=self.downloading,
+                      on_change=lambda e: self.set_setting("covers", e.control.value)),
+            ft.Switch(label=self.t("clean_titles"), value=self.settings["clean_titles"], disabled=self.downloading,
+                      on_change=lambda e: self.set_setting("clean_titles", e.control.value)),
+            ft.Text(self.t("files_help"), color=ft.Colors.ON_SURFACE_VARIANT))
         return ft.ListView([
+            files,
             *([] if self.mobile else [browser]),
             cookies,
             section(self.t("language"),
