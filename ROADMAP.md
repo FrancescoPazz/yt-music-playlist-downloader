@@ -11,7 +11,7 @@ riskiest part (Android) is tested before the interface is built.
 | [2. Android spike](#phase-2--android-spike) ✅ | One track downloaded on a real phone, or a decision to change plan | Android |
 | [3. Desktop MVP](#phase-3--desktop-mvp) ✅ | A window that does what the CLI does today, plus a track list | Windows |
 | [4. Android app](#phase-4--android-app) 🚧 | The same app on the phone, with sharing from YouTube Music | Android |
-| [5. Releases](#phase-5--builds-and-releases) 🚧 | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
+| [5. Releases](#phase-5--builds-and-releases) ✅ | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
 | [6. Staying current](#phase-6--keeping-up-with-youtube) ✅ | A new build whenever yt-dlp changes | Both |
 | [7. Later](#phase-7--later) 🚧 | Covers, cleaner titles, playlist sync | Both |
 
@@ -142,9 +142,9 @@ The same screens, laid out for a phone (navigation bar at the bottom), plus what
 signed APK, and publishes both on a `v*` tag (a manual run builds without publishing). The signing key lives in the
 `YTMPD_*` repository secrets; the APK is named after the version (`yt-music-playlist-downloader-0.2.0.apk`) rather
 than the run number. The README has the **Download the app** section.
-Not yet run on GitHub (the account's Actions are blocked by a billing issue), so
-[v0.2.0](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/tag/v0.2.0) was built locally
-with the same settings; see [DEVLOG.md](DEVLOG.md).
+Verified on GitHub with manual runs: Windows (90 MB), macOS (83 MB), Linux (113 MB) and the signed APK (55 MB, same
+certificate as v0.2.0). [v0.2.0](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/tag/v0.2.0)
+itself was built locally while Actions was blocked; see [DEVLOG.md](DEVLOG.md).
 
 - `.github/workflows/build.yml`: on every `v*` tag, builds `yt-music-playlist-downloader-windows.zip` (and later
   macOS and Linux) and `yt-music-playlist-downloader-N.apk`, runs the tests first, and attaches the files to a GitHub
@@ -156,7 +156,7 @@ with the same settings; see [DEVLOG.md](DEVLOG.md).
 
 ## Phase 6 — Keeping up with YouTube
 
-**Done**, with the same caveat as phase 5: the weekly workflow hasn't run on GitHub yet. `bump_ytdlp.py` was tested
+**Done.** The weekly workflow hasn't had a new yt-dlp to react to yet. `bump_ytdlp.py` was tested
 on a copy of the files with a pretend version, the update notice and the report against the real v0.2.0 release.
 The report opens a prefilled GitHub issue as well as copying the text.
 

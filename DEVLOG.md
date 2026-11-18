@@ -1,5 +1,19 @@
 # Devlog
 
+## 2026-11-18 — Phase 7, and the release workflow on GitHub
+
+- With Actions unblocked, manual runs of `release.yml` built every platform. The APK from CI is signed with the release
+  certificate (`4720a0ca…`) and has versionCode 3, above v0.2.0's 2, so it installs as an update.
+- The first macOS run failed in `version.sh`: macOS's BSD `sed -i` wants a suffix; `sed -i.bak … && rm *.bak` works
+  with both seds. Linux needed nothing beyond Flet's own apt list (`flet_cli.utils.linux_deps`).
+- Covers: `hqdefault.jpg` is 480x360 with the 16:9 picture between black bands; cutting the bands before the square
+  crop keeps them out (tested). "Me at the zoo" has no `maxresdefault.jpg`, so the fallback was exercised live: MP3
+  and M4A both got a 270x270 cover, the MP3 still in ID3v2.3.
+- Clean titles: the first rule for endings like " - Official Video" also matched inside "(Girls Trip - Official
+  Visualizer)" and left a bracket open; endings now can't contain brackets.
+- Sync, run twice through the GUI logic: the first downloaded the track, the second said there was nothing new.
+- Not done: downloads in the background on Android (item 4); it needs a Kotlin foreground service.
+
 ## 2026-11-18 — Phase 6: keeping up with YouTube
 
 - `yt-dlp-update.yml` (Mondays) runs `.github/scripts/bump_ytdlp.py`. With `--latest 2026.11.10 --ejs 0.8.1` on a copy of
