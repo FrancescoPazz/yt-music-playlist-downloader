@@ -10,7 +10,8 @@ else
   number="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' ytmpd/__init__.py)"
   label="$number-dev.${GITHUB_RUN_NUMBER:-0}"
 fi
-sed -i "s/^__version__ = .*/__version__ = \"$label\"/" ytmpd/__init__.py
+# -i.bak, not -i: macOS's BSD sed needs a suffix argument, GNU sed accepts this form too
+sed -i.bak "s/^__version__ = .*/__version__ = \"$label\"/" ytmpd/__init__.py && rm ytmpd/__init__.py.bak
 echo "number=$number" >> "$GITHUB_OUTPUT"
 echo "label=$label" >> "$GITHUB_OUTPUT"
 echo "Version $label (build $number)"
