@@ -1,0 +1,43 @@
+# Every Monday: when a new yt-dlp is out, raise the minimum version, tag a patch release and start release.yml for it.
+# The app can't update yt-dlp by itself, and YouTube changes often enough that an old one stops working.
+name: yt-dlp update
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write  # commit and tag
+  actions: write   # start release.yml: a tag pushed with GITHUB_TOKEN doesn't trigger other workflows by itself
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Check PyPI
+        id: bump
+        run: echo "tag=$(python .github/scripts/bump_ytdlp.py)" >> "$GITHUB_OUTPUT"
+      - name: Test with the new yt-dlp
+        if: steps.bump.outputs.tag != ''
+        run: |
+          pip install -r requirements.txt
+          python -m unittest
+      - name: Commit and tag
+        if: steps.bump.outputs.tag != ''
+        run: |
+          version=$(grep -o 'yt-dlp\[default\]>=[0-9.]*' requirements.txt | cut -d= -f2)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "build(deps): update yt-dlp to $version"
+          git tag -a "${{ steps.bump.outputs.tag }}" -m "yt-dlp $version"
+          git push origin HEAD "${{ steps.bump.outputs.tag }}"
+      - name: Build and publish the release
+        if: steps.bump.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref "${{ steps.bump.outputs.tag }}"
