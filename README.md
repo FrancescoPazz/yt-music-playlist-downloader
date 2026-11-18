@@ -26,6 +26,7 @@
 
 | You want to | Go to |
 |---|---|
+| **Install the app** | [Download the app](#download-the-app): Windows zip and Android APK from Releases. |
 | **Download with a window and buttons** | [Desktop app](#desktop-app): paste a link, pick the tracks, press Download. |
 | **Download on an Android phone** | [Android app](#android-app): M4A straight into the Music folder. |
 | **Download from the terminal** | [Install](#install), then [Usage](#usage): two commands and a link. |
@@ -34,7 +35,7 @@
 | **Use it from your own Python code** | [Development](#development): the `ytmpd` package and its events. |
 | **Something went wrong** | [Questions](#questions-people-ask): FFmpeg, gaps in the numbering, `NA` files, HTTP 403. |
 
-[How it works](#how-it-works) · [Desktop app](#desktop-app) · [Android app](#android-app) · [Install](#install) · [Usage](#usage) · [Browser cookies](#browser-cookies) ·
+[How it works](#how-it-works) · [Download the app](#download-the-app) · [Desktop app](#desktop-app) · [Android app](#android-app) · [Install](#install) · [Usage](#usage) · [Browser cookies](#browser-cookies) ·
 [Development](#development) · [Roadmap](ROADMAP.md) · [Questions](#questions-people-ask)
 
 ## How it works
@@ -66,6 +67,16 @@ downloads/
 For each track the terminal shows the title, then percentage, speed and time left, then the saved file name. The
 messages are in Italian.
 
+## Download the app
+
+| | |
+|---|---|
+| **Where** | [Releases](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/latest): `yt-music-playlist-downloader-windows-<version>.zip` for Windows, `yt-music-playlist-downloader-<version>.apk` for Android 7 or later. |
+| **On Windows** | Extract the zip anywhere and open `yt-music-playlist-downloader.exe`; Python, yt-dlp and FFmpeg are inside. The app isn't signed, so SmartScreen may say it protected your PC: **More info**, then **Run anyway**. The first start takes up to 40 seconds. |
+| **On the phone** | Download the `.apk` on the phone and open it. Android asks permission to install apps from that browser or file manager, and Play Protect may warn that the app is unknown because it doesn't come from the Play Store, which doesn't accept YouTube downloaders. |
+| **Updates** | Every APK is signed with the same key, so a new one installs over the old one and keeps settings and history. On Windows, extract the new zip in place of the old folder: settings and history live in `%APPDATA%` and stay. |
+| **How it's built** | Each `v*` tag runs [`release.yml`](.github/workflows/release.yml) on GitHub: tests, the Windows build, the signed APK and a new release with both files and their SHA-256. It takes about 15 minutes. |
+
 ## Desktop app
 
 | | |
@@ -86,12 +97,7 @@ installing anything else. Settings and history are saved in
 `%APPDATA%\Francesco Pazzaglia\YT Music Playlist Downloader\data` by the packaged app, and in `.ytmpd` in your user
 folder when it runs from the source code.
 
-**On Windows**, download `yt-music-playlist-downloader-windows.zip` from
-[Releases](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases), extract it and double-click
-`yt-music-playlist-downloader.exe`: Python, yt-dlp and FFmpeg are inside. SmartScreen may warn that the app isn't
-signed (**More info** → **Run anyway**), and the first start takes up to 40 seconds.
-
-**From the source code**, on any system:
+**On Windows**, see [Download the app](#download-the-app). **From the source code**, on any system:
 
 ```bash
 python -m pip install -r requirements.txt "flet[all]==1.1.2" imageio-ffmpeg
@@ -124,8 +130,8 @@ The same app and screens, with what changes on a phone:
 | **Long playlists** | The screen stays on while downloading, and the app asks before downloading on mobile data. |
 | **JavaScript** | The app ships its own QuickJS-ng, so YouTube's challenges are solved on the phone too. |
 
-There is no ready-made APK yet: it comes with [phase 5](ROADMAP.md#phase-5--builds-and-releases), signed. To build one
-you need the Android SDK and Windows Developer Mode; the QuickJS wheels are already in `android/wheels`:
+The APK is in [Releases](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/latest) (see [Download the app](#download-the-app)). To build one yourself you need the
+Android SDK and, on Windows, Developer Mode; the QuickJS wheels are already in `android/wheels`:
 
 ```bash
 PIP_FIND_LINKS="$PWD/android/wheels" PYTHONUTF8=1 flet build apk --arch arm64-v8a x86_64 --yes
@@ -246,6 +252,7 @@ in a few seconds, without downloading.
 | `tests/test_core.py` | Tests for links, options and tags (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, which brings `yt-dlp-ejs` (the JavaScript challenge solver) and `mutagen` (M4A tags) |
 | `android/qjs/build_wheels.py` | Builds QuickJS-ng for Android with the NDK and wraps it in the `ytmpd-qjs` wheels |
+| `.github/workflows/release.yml` | Builds both apps and publishes a release on every `v*` tag; `.github/scripts/version.sh` sets the version |
 | `android/wheels/` | Those wheels, so building the APK doesn't need the NDK |
 | `ROADMAP.md` | Plan for the desktop and Android GUI app |
 | `DEVLOG.md` | What each phase found out, starting from the Android spike |

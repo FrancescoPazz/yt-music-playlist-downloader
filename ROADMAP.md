@@ -11,7 +11,7 @@ riskiest part (Android) is tested before the interface is built.
 | [2. Android spike](#phase-2--android-spike) ✅ | One track downloaded on a real phone, or a decision to change plan | Android |
 | [3. Desktop MVP](#phase-3--desktop-mvp) ✅ | A window that does what the CLI does today, plus a track list | Windows |
 | [4. Android app](#phase-4--android-app) 🚧 | The same app on the phone, with sharing from YouTube Music | Android |
-| [5. Releases](#phase-5--builds-and-releases) | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
+| [5. Releases](#phase-5--builds-and-releases) 🚧 | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
 | [6. Staying current](#phase-6--keeping-up-with-youtube) | A new build whenever yt-dlp changes | Both |
 | [7. Later](#phase-7--later) | Covers, cleaner titles, playlist sync | Both |
 
@@ -137,6 +137,11 @@ The same screens, laid out for a phone (navigation bar at the bottom), plus what
 **Done when** a playlist shared from the YouTube Music app ends up in the phone's music player.
 
 ## Phase 5 — Builds and releases
+
+**Workflow in place**: [`release.yml`](.github/workflows/release.yml) runs the tests, builds the Windows zip and the
+signed APK, and publishes both on a `v*` tag (a manual run builds without publishing). The signing key lives in the
+`YTMPD_*` repository secrets; the APK is named after the version (`yt-music-playlist-downloader-0.2.0.apk`) rather
+than the run number. The README has the **Download the app** section.
 
 - `.github/workflows/build.yml`: on every `v*` tag, builds `yt-music-playlist-downloader-windows.zip` (and later
   macOS and Linux) and `yt-music-playlist-downloader-N.apk`, runs the tests first, and attaches the files to a GitHub
