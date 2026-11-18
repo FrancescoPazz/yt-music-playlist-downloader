@@ -1,11 +1,10 @@
-# Used by `flet build` to package the desktop app (and later the Android one).
-# The CLI only needs requirements.txt.
+# Used by `flet build` to package the desktop and Android apps. The CLI only needs requirements.txt.
 [project]
 name = "yt-music-playlist-downloader"
 version = "0.1.0"  # keep in sync with ytmpd/__init__.py
 description = "Download YouTube and YouTube Music playlists as MP3 or M4A"
 requires-python = ">=3.10"
-dependencies = ["flet==1.1.2", "yt-dlp[default]>=2026.10.26", "imageio-ffmpeg"]
+dependencies = ["flet==1.1.2", "yt-dlp>=2026.10.26"]
 
 [tool.flet]
 org = "io.github.francescopazz"
@@ -14,5 +13,25 @@ company = "Francesco Pazzaglia"
 copyright = "Copyright (c) 2026 Francesco Pazzaglia"
 
 [tool.flet.app]
-exclude = ["downloads", "spike", "tests", "docs", "build", ".venv", "DEVLOG.md", "ROADMAP.md", "README.md",
-           "README.it.md", "requirements.txt", "downloader.py"]
+exclude = ["downloads", "spike", "tests", "docs", "build", ".venv", "android", "DEVLOG.md", "ROADMAP.md",
+           "README.md", "README.it.md", "requirements.txt", "downloader.py"]
+
+[tool.flet.windows]
+dependencies = ["yt-dlp[default]>=2026.10.26", "imageio-ffmpeg"]
+
+[tool.flet.android]
+# Pure-Python parts of yt-dlp[default] (its native extras aren't needed for YouTube), plus QuickJS from
+# android/wheels: build with PIP_FIND_LINKS pointing there. Keep yt-dlp-ejs at the version yt-dlp pins.
+dependencies = ["yt-dlp-ejs==0.8.0", "mutagen", "certifi", "requests", "ytmpd-qjs==0.18.0"]
+legacy_packaging = true  # extracts libqjs.so to disk, the only place Android lets an app execute files from
+
+# "Open with" for playlist links. Android 12+ opens unverified links in the browser unless the user turns on
+# "Open supported links" for the app in its system settings.
+[[tool.flet.android.activity.intent_filter]]
+actions = ["android.intent.action.VIEW"]
+categories = ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"]
+data = [
+    { scheme = "https", host = "music.youtube.com", pathPrefix = "/playlist" },
+    { scheme = "https", host = "www.youtube.com", pathPrefix = "/playlist" },
+    { scheme = "https", host = "m.youtube.com", pathPrefix = "/playlist" },
+]
