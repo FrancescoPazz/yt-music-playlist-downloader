@@ -172,6 +172,45 @@ class RetryAfter403(unittest.TestCase):
         self.assertEqual((result["done"], result["skipped"], calls), (0, 1, 2))
 
 
+class CleanTitles(unittest.TestCase):
+    def test_cases(self):
+        cases = {
+            "Felix Jaehn, Whitney Houston - It's Not Right But It's Okay (Official Video)":
+                "Felix Jaehn, Whitney Houston - It's Not Right But It's Okay",
+            "David Guetta & Bebe Rexha - I'm Good (Blue) [Djs From Mars Remix] [VISUALIZER]":
+                "David Guetta & Bebe Rexha - I'm Good (Blue) [Djs From Mars Remix]",
+            "Tom Santa - Rainfall (Praise You) ｜ Official Video": "Tom Santa - Rainfall (Praise You)",
+            "Alan Walker, Dash Berlin & Vikkstar - Better Off (Alone, Pt. III) - Official Music Video":
+                "Alan Walker, Dash Berlin & Vikkstar - Better Off (Alone, Pt. III)",
+            "Jain - Makeba (Ian Asher Remix)": "Jain - Makeba (Ian Asher Remix)",
+            "Zara Larsson, PinkPantheress - Midnight Sun (Girls Trip - Official Visualizer)":
+                "Zara Larsson, PinkPantheress - Midnight Sun (Girls Trip - Official Visualizer)",
+            "Sonny Fodera - Mind Still (feat. blythe) [Official Music Video]": "Sonny Fodera - Mind Still (feat. blythe)",
+            "Official Video": "Official Video",  # never leave an empty title
+            "Me at the zoo": "Me at the zoo",
+        }
+        for title, clean in cases.items():
+            self.assertEqual(core.clean_title(title), clean, title)
+
+
+class Covers(unittest.TestCase):
+    @unittest.skipUnless(__import__("importlib.util").util.find_spec("PIL"), "Pillow not installed")
+    def test_square_crop_drops_the_black_bands(self):
+        import io
+
+        from PIL import Image
+
+        frame = Image.new("RGB", (480, 360), "black")  # hqdefault: 480x360 with a 480x270 picture in the middle
+        frame.paste(Image.new("RGB", (480, 270), "red"), (0, 45))
+        out = io.BytesIO()
+        frame.save(out, "JPEG")
+        square = Image.open(io.BytesIO(core.square_jpeg(out.getvalue())))
+        self.assertEqual(square.size, (270, 270))
+        r, g, b = square.getpixel((5, 5))
+        self.assertGreater(r, 200)  # red, not a black band
+        self.assertLess(g + b, 60)
+
+
 class UpdateCheck(unittest.TestCase):
     def test_versions(self):
         from ytmpd import update

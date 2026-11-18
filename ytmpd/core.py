@@ -4,6 +4,7 @@ Nothing here prints: progress is reported as event dicts to `on_event`, so the C
 Use only for content you are authorized to download.
 """
 
+import io
 import os
 import re
 import shutil
@@ -152,6 +153,60 @@ def build_options(output_dir: str, fmt: str = "mp3", bitrate: str = "192", brows
     return opts
 
 
+# Words that make a bracketed group, or a " - …" / " | …" ending, pure noise in a music video's title.
+_NOISE_WORDS = {"official", "music", "video", "audio", "lyric", "lyrics", "visualizer", "visualiser", "hd", "hq",
+                "4k", "mv", "clip", "videoclip", "ufficiale", "full"}
+
+
+def _is_noise(text: str) -> bool:
+    words = re.findall(r"[^\W_]+", text.lower())
+    return bool(words) and all(w in _NOISE_WORDS for w in words)
+
+
+def clean_title(title: str) -> str:
+    """"Song (Official Video) [4K]" → "Song". Groups with anything else in them, like "(Remix)", are kept."""
+    cleaned = re.sub(r"\s*[(\[]([^)\]]*)[)\]]", lambda m: "" if _is_noise(m.group(1)) else m.group(0), title)
+    ending = re.search(r"\s+[-|｜–]\s*([^-|｜–()\[\]]*)$", cleaned)  # no brackets: "(A - Official Video)" stays
+    if ending and _is_noise(ending.group(1)):
+        cleaned = cleaned[:ending.start()]
+    return cleaned.strip() or title
+
+
+def square_jpeg(data: bytes) -> bytes:
+    """Centre square of a video thumbnail, as JPEG. Without Pillow the image is returned as it is."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return data
+    image = Image.open(io.BytesIO(data)).convert("RGB")
+    width, height = image.size
+    if abs(width / height - 4 / 3) < 0.02:  # hqdefault.jpg: a 16:9 frame with black bands above and below
+        band = width * 9 // 16
+        image = image.crop((0, (height - band) // 2, width, (height + band) // 2))
+        width, height = image.size
+    side = min(width, height)
+    left, top = (width - side) // 2, (height - side) // 2
+    out = io.BytesIO()
+    image.crop((left, top, left + side, top + side)).save(out, "JPEG", quality=90)
+    return out.getvalue()
+
+
+def embed_cover(path: str, jpeg: bytes):
+    if path.endswith(".m4a"):
+        from mutagen.mp4 import MP4, MP4Cover
+
+        audio = MP4(path)
+        audio["covr"] = [MP4Cover(jpeg, imageformat=MP4Cover.FORMAT_JPEG)]
+        audio.save()
+    else:
+        from mutagen.id3 import APIC, ID3
+
+        tags = ID3(path)
+        tags.delall("APIC")
+        tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=jpeg))
+        tags.save(v2_version=3)  # keep ID3v2.3, the version older players read
+
+
 def tags_for(info: dict) -> dict:
     """Title, artist and album as YouTube Music reports them, falling back to the video's own fields."""
     tags = {
@@ -173,6 +228,25 @@ class Mp4Tags(PostProcessor):
         for name, value in tags_for(info).items():
             audio[keys[name]] = [value]
         audio.save()
+        return [], info
+
+
+class Covers(PostProcessor):
+    """Embeds the video thumbnail, cropped square, without FFmpeg (works on Android too). Never fails a track."""
+
+    def run(self, info):
+        thumbnails = sorted((t for t in info.get("thumbnails") or [] if ".jpg" in t.get("url", "")),
+                            key=lambda t: t.get("preference") or 0, reverse=True)
+        for thumbnail in thumbnails[:4]:  # maxresdefault.jpg is missing for some videos; fall back to smaller ones
+            try:
+                data = self._downloader.urlopen(thumbnail["url"]).read()
+                embed_cover(info["filepath"], square_jpeg(data))
+                break
+            except Exception as e:
+                error = e
+        else:
+            if thumbnails:
+                self.report_warning(f"{info.get('id')}: cover not embedded: {error}")
         return [], info
 
 
@@ -217,11 +291,14 @@ class _Logger:
 class _Current(PostProcessor):
     """Runs before each video is downloaded and remembers it, so errors without an id can be attributed."""
 
-    def __init__(self, logger):
+    def __init__(self, logger, clean=False):
         super().__init__()
         self.logger = logger
+        self.clean = clean  # runs before the file name is made, so a clean title also gives a clean file name
 
     def run(self, info):
+        if self.clean:
+            info["title"] = clean_title(info.get("title") or "")
         self.logger.current = {"id": info.get("id"), "title": info.get("title")}
         return [], info
 
@@ -252,7 +329,8 @@ def list_playlist(url: str, browser: str = "none", cookies: str | None = None) -
 
 def download(url: str, output_dir: str = "downloads", fmt: str = "mp3", bitrate: str = "192",
              browser: str = "none", items: str | None = None, on_event=lambda e: None, cancel=None,
-             cookies: str | None = None, temp_dir: str | None = None, archive: str | None = None) -> dict:
+             cookies: str | None = None, temp_dir: str | None = None, archive: str | None = None,
+             covers: bool = False, clean_titles: bool = False) -> dict:
     """Download the playlist into output_dir. Tracks already in the folder's archive are skipped.
 
     on_event gets dicts with "type": track_started, progress, track_done, track_skipped, warning, finished.
@@ -301,9 +379,11 @@ def download(url: str, output_dir: str = "downloads", fmt: str = "mp3", bitrate:
     }
     cancelled = False
     with yt_dlp.YoutubeDL(opts) as ydl:
-        ydl.add_post_processor(_Current(logger), when="pre_process")
+        ydl.add_post_processor(_Current(logger, clean_titles), when="pre_process")
         if fmt == "m4a":
             ydl.add_post_processor(Mp4Tags(), when="post_process")
+        if covers:  # after the tags, so FFmpegMetadata (MP3) doesn't rewrite the file without the picture
+            ydl.add_post_processor(Covers(), when="post_process")
         ydl.add_post_processor(_Events(emit), when="after_move")
         # YouTube sometimes answers the first request with HTTP 403 and the same request works a moment later.
         # A second pass retries only the failed tracks: the archive skips the ones already done.
