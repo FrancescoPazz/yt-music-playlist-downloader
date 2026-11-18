@@ -142,6 +142,9 @@ The same screens, laid out for a phone (navigation bar at the bottom), plus what
 signed APK, and publishes both on a `v*` tag (a manual run builds without publishing). The signing key lives in the
 `YTMPD_*` repository secrets; the APK is named after the version (`yt-music-playlist-downloader-0.2.0.apk`) rather
 than the run number. The README has the **Download the app** section.
+Not yet run on GitHub (the account's Actions are blocked by a billing issue), so
+[v0.2.0](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/tag/v0.2.0) was built locally
+with the same settings; see [DEVLOG.md](DEVLOG.md).
 
 - `.github/workflows/build.yml`: on every `v*` tag, builds `yt-music-playlist-downloader-windows.zip` (and later
   macOS and Linux) and `yt-music-playlist-downloader-N.apk`, runs the tests first, and attaches the files to a GitHub

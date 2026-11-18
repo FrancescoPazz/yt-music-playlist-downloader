@@ -1,5 +1,17 @@
 # Devlog
 
+## 2026-11-18 — Phase 5: release workflow and v0.2.0
+
+- `release.yml` is written but has not run yet: GitHub refuses to start any job ("your account is locked due to a
+  billing issue"), both for the manual run and for tag `v0.2.0`.
+- v0.2.0 was therefore built on the maintainer's PC from the tag, with the same versions as the workflow
+  (`--build-version 0.2.0 --build-number 2`) and the release key: `apksigner` shows the certificate
+  `CN=YT Music Playlist Downloader`, SHA-256 `4720a0ca…815914`, versionCode 2. The next build from the workflow must
+  use a higher build number; GitHub's run numbers for this workflow start at 3, so they do.
+- The first local APK build failed with the JVM out of memory (Gradle asks for 8 GB) while the emulator was running;
+  closing the emulator was enough.
+- Re-running workflow run 2 (tag `v0.2.0`) would now fail at the last step, because the release already exists.
+
 ## 2026-11-18 — Phase 4: Android app
 
 Same `ytmpd/gui.py` as the desktop, switching on `page.platform.is_mobile()`. Built with
