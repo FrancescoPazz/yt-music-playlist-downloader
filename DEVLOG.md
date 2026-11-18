@@ -1,5 +1,18 @@
 # Devlog
 
+## 2026-11-18 — Phase 6: keeping up with YouTube
+
+- `yt-dlp-update.yml` (Mondays) runs `.github/scripts/bump_ytdlp.py`. With `--latest 2026.11.10 --ejs 0.8.1` on a copy of
+  the files it raised yt-dlp in `requirements.txt`, `pyproject.toml` and the README badges, set the Android
+  `yt-dlp-ejs` pin to the one yt-dlp asks for, bumped the app to 0.2.1 and printed `v0.2.1`; against PyPI
+  (still 2026.10.26) it changed nothing.
+- A tag pushed with `GITHUB_TOKEN` doesn't start other workflows, so the update workflow starts `release.yml` itself
+  with `gh workflow run --ref <tag>`; on that ref `github.ref` is the tag, so the release job runs.
+- The app asks `api.github.com/repos/…/releases/latest` once at startup, in a thread, with certifi's CA bundle (Android's
+  Python has no system one). Run from source as 0.1.0, it showed "Version v0.2.0 is available" with a Download button.
+- **Report a problem** builds the report without any link (a playlist can be private) and opens
+  `issues/new?title=…&body=…`; with two errors the URL is about 450 characters.
+
 ## 2026-11-18 — Phase 5: release workflow and v0.2.0
 
 - `release.yml` is written but has not run yet: GitHub refuses to start any job ("your account is locked due to a

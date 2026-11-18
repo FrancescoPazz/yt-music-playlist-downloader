@@ -74,8 +74,8 @@ messages are in Italian.
 | **Where** | [Releases](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/latest): `yt-music-playlist-downloader-windows-<version>.zip` for Windows, `yt-music-playlist-downloader-<version>.apk` for Android 7 or later. |
 | **On Windows** | Extract the zip anywhere and open `yt-music-playlist-downloader.exe`; Python, yt-dlp and FFmpeg are inside. The app isn't signed, so SmartScreen may say it protected your PC: **More info**, then **Run anyway**. The first start takes up to 40 seconds. |
 | **On the phone** | Download the `.apk` on the phone and open it. Android asks permission to install apps from that browser or file manager, and Play Protect may warn that the app is unknown because it doesn't come from the Play Store, which doesn't accept YouTube downloaders. |
-| **Updates** | Every APK is signed with the same key, so a new one installs over the old one and keeps settings and history. On Windows, extract the new zip in place of the old folder: settings and history live in `%APPDATA%` and stay. |
-| **How it's built** | Each `v*` tag runs [`release.yml`](.github/workflows/release.yml) on GitHub: tests, the Windows build, the signed APK and a new release with both files and their SHA-256. It takes about 15 minutes. |
+| **Updates** | At startup the app checks GitHub and says when a newer version is out. Every APK is signed with the same key, so a new one installs over the old one and keeps settings and history. On Windows, extract the new zip in place of the old folder: settings and history live in `%APPDATA%` and stay. |
+| **How it's built** | Each `v*` tag runs [`release.yml`](.github/workflows/release.yml) on GitHub: tests, the Windows build, the signed APK and a new release with both files and their SHA-256. It takes about 15 minutes. Every Monday [`yt-dlp-update.yml`](.github/workflows/yt-dlp-update.yml) checks PyPI and, when yt-dlp has a new version, raises it, tags a patch release and starts the build: YouTube changes often, and an app can't update its own yt-dlp. |
 
 ## Desktop app
 
@@ -90,7 +90,7 @@ messages are in Italian.
 |---|---|
 | **Download** | The link field, filled in from the clipboard when it holds a YouTube link. **Load** lists the tracks with position and duration; tick the ones you want. Tracks already in the destination folder are marked and left out. Format, MP3 quality and folder sit at the bottom; each playlist gets its own subfolder. During the download every track shows its progress, then a check mark or a red icon whose tooltip says why it was skipped. **Cancel** stops after the current chunk. |
 | **History** | The last 100 downloads: playlist, date, format, folder, how many tracks were saved and which were skipped, with the reason. **Open folder** and **Load again**. |
-| **Settings** | Browser cookies (see [Browser cookies](#browser-cookies)), language (Italian, English or the system's), theme (light, dark or the system's), and the versions of yt-dlp, FFmpeg and the JavaScript runtime in use. |
+| **Settings** | Browser cookies (see [Browser cookies](#browser-cookies)) or a `cookies.txt` file, language (Italian, English or the system's), theme (light, dark or the system's), the versions of yt-dlp, FFmpeg and the JavaScript runtime in use, and **Report a problem**: it copies those versions and the last errors (no links) and opens a new GitHub issue with them. |
 
 The app uses its own FFmpeg (from the `imageio-ffmpeg` package) when there is none on the PATH, so MP3 works without
 installing anything else. Settings and history are saved in
@@ -245,6 +245,7 @@ in a few seconds, without downloading.
 | `ytmpd/core.py` | Link normalization, yt-dlp options, playlist listing, download with events and cancel, M4A tags |
 | `ytmpd/cli.py` | Command-line options and the Italian messages |
 | `ytmpd/gui.py` | Desktop app: the three screens, background threads, settings and history files |
+| `ytmpd/update.py` | Asks GitHub for the latest release, for the update notice |
 | `ytmpd/i18n.py` | Italian and English text of the app; tests check both have the same keys |
 | `main.py` | Starts the desktop app |
 | `pyproject.toml` | App name, version and dependencies for `flet build` |
@@ -252,6 +253,7 @@ in a few seconds, without downloading.
 | `tests/test_core.py` | Tests for links, options and tags (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, which brings `yt-dlp-ejs` (the JavaScript challenge solver) and `mutagen` (M4A tags) |
 | `android/qjs/build_wheels.py` | Builds QuickJS-ng for Android with the NDK and wraps it in the `ytmpd-qjs` wheels |
+| `.github/workflows/yt-dlp-update.yml` | Weekly: a new yt-dlp means a new patch release; `.github/scripts/bump_ytdlp.py` updates the files |
 | `.github/workflows/release.yml` | Builds both apps and publishes a release on every `v*` tag; `.github/scripts/version.sh` sets the version |
 | `android/wheels/` | Those wheels, so building the APK doesn't need the NDK |
 | `ROADMAP.md` | Plan for the desktop and Android GUI app |

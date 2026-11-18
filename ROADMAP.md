@@ -12,7 +12,7 @@ riskiest part (Android) is tested before the interface is built.
 | [3. Desktop MVP](#phase-3--desktop-mvp) ✅ | A window that does what the CLI does today, plus a track list | Windows |
 | [4. Android app](#phase-4--android-app) 🚧 | The same app on the phone, with sharing from YouTube Music | Android |
 | [5. Releases](#phase-5--builds-and-releases) 🚧 | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
-| [6. Staying current](#phase-6--keeping-up-with-youtube) | A new build whenever yt-dlp changes | Both |
+| [6. Staying current](#phase-6--keeping-up-with-youtube) ✅ | A new build whenever yt-dlp changes | Both |
 | [7. Later](#phase-7--later) | Covers, cleaner titles, playlist sync | Both |
 
 ## Phase 0 — Choose the stack
@@ -155,6 +155,10 @@ with the same settings; see [DEVLOG.md](DEVLOG.md).
   will say about an unknown app, and how updates work.
 
 ## Phase 6 — Keeping up with YouTube
+
+**Done**, with the same caveat as phase 5: the weekly workflow hasn't run on GitHub yet. `bump_ytdlp.py` was tested
+on a copy of the files with a pretend version, the update notice and the report against the real v0.2.0 release.
+The report opens a prefilled GitHub issue as well as copying the text.
 
 The app breaks when YouTube changes and yt-dlp hasn't caught up, and an app user can't run `pip install -U`.
 

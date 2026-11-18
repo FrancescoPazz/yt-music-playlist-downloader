@@ -73,8 +73,8 @@ Per ogni brano il terminale mostra il titolo, poi percentuale, velocità e tempo
 | **Dove** | [Release](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/latest): `yt-music-playlist-downloader-windows-<versione>.zip` per Windows, `yt-music-playlist-downloader-<versione>.apk` per Android 7 o successivo. |
 | **Su Windows** | Estrai lo zip dove vuoi e apri `yt-music-playlist-downloader.exe`; Python, yt-dlp e FFmpeg sono già dentro. L'app non è firmata, quindi SmartScreen può dire di aver protetto il PC: **Ulteriori informazioni**, poi **Esegui comunque**. Il primo avvio richiede fino a 40 secondi. |
 | **Sul telefono** | Scarica l'`.apk` dal telefono e aprilo. Android chiede il permesso di installare app da quel browser o file manager, e Play Protect può segnalare l'app come sconosciuta perché non arriva dal Play Store, che non accetta app per scaricare da YouTube. |
-| **Aggiornamenti** | Ogni APK è firmato con la stessa chiave, quindi uno nuovo si installa sopra il precedente e mantiene impostazioni e cronologia. Su Windows, estrai il nuovo zip al posto della vecchia cartella: impostazioni e cronologia stanno in `%APPDATA%` e restano. |
-| **Come viene compilata** | Ogni tag `v*` avvia [`release.yml`](.github/workflows/release.yml) su GitHub: test, build Windows, APK firmato e una nuova release con i due file e il loro SHA-256. Ci vogliono circa 15 minuti. |
+| **Aggiornamenti** | All'avvio l'app controlla GitHub e avvisa quando esce una versione più nuova. Ogni APK è firmato con la stessa chiave, quindi uno nuovo si installa sopra il precedente e mantiene impostazioni e cronologia. Su Windows, estrai il nuovo zip al posto della vecchia cartella: impostazioni e cronologia stanno in `%APPDATA%` e restano. |
+| **Come viene compilata** | Ogni tag `v*` avvia [`release.yml`](.github/workflows/release.yml) su GitHub: test, build Windows, APK firmato e una nuova release con i due file e il loro SHA-256. Ci vogliono circa 15 minuti. Ogni lunedì [`yt-dlp-update.yml`](.github/workflows/yt-dlp-update.yml) controlla PyPI e, quando esce una nuova versione di yt-dlp, la adotta, crea il tag di una release di correzione e avvia la build: YouTube cambia spesso, e un'app non può aggiornare da sola il proprio yt-dlp. |
 
 ## App desktop
 
@@ -89,7 +89,7 @@ Per ogni brano il terminale mostra il titolo, poi percentuale, velocità e tempo
 |---|---|
 | **Scarica** | Il campo del link, riempito dagli appunti quando contengono un link di YouTube. **Carica** elenca i brani con posizione e durata; spunta quelli che vuoi. I brani già presenti nella cartella di destinazione sono segnati e lasciati fuori. Formato, qualità MP3 e cartella stanno in basso; ogni playlist ha la sua sottocartella. Durante il download ogni brano mostra l'avanzamento, poi una spunta o un'icona rossa con il motivo del salto nel suggerimento. **Annulla** si ferma dopo il blocco in corso. |
 | **Cronologia** | Gli ultimi 100 download: playlist, data, formato, cartella, quanti brani sono stati salvati e quali saltati, con il motivo. **Apri cartella** e **Ricarica**. |
-| **Impostazioni** | Cookie del browser (vedi [Cookie del browser](#cookie-del-browser)), lingua (italiano, inglese o quella del sistema), tema (chiaro, scuro o quello del sistema), e le versioni di yt-dlp, FFmpeg e del runtime JavaScript in uso. |
+| **Impostazioni** | Cookie del browser (vedi [Cookie del browser](#cookie-del-browser)) o un file `cookies.txt`, lingua (italiano, inglese o quella del sistema), tema (chiaro, scuro o quello del sistema), le versioni di yt-dlp, FFmpeg e del runtime JavaScript in uso, e **Segnala un problema**: copia quelle versioni e gli ultimi errori (senza link) e apre una nuova issue su GitHub già compilata. |
 
 L'app usa un suo FFmpeg (dal pacchetto `imageio-ffmpeg`) quando nel PATH non ce n'è uno, quindi l'MP3 funziona senza
 installare altro. Impostazioni e cronologia sono salvate in
@@ -245,6 +245,7 @@ result = core.download("https://music.youtube.com/playlist?list=...", "downloads
 | `ytmpd/core.py` | Normalizzazione del link, opzioni di yt-dlp, elenco della playlist, download con eventi e annullamento, tag M4A |
 | `ytmpd/cli.py` | Opzioni da riga di comando e messaggi in italiano |
 | `ytmpd/gui.py` | App desktop: le tre schermate, i thread in background, i file di impostazioni e cronologia |
+| `ytmpd/update.py` | Chiede a GitHub l'ultima release, per l'avviso di aggiornamento |
 | `ytmpd/i18n.py` | Testi dell'app in italiano e inglese; i test controllano che abbiano le stesse chiavi |
 | `main.py` | Avvia l'app desktop |
 | `pyproject.toml` | Nome, versione e dipendenze dell'app per `flet build` |
@@ -252,6 +253,7 @@ result = core.download("https://music.youtube.com/playlist?list=...", "downloads
 | `tests/test_core.py` | Test su link, opzioni e tag (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, che porta con sé `yt-dlp-ejs` (il risolutore della verifica JavaScript) e `mutagen` (tag M4A) |
 | `android/qjs/build_wheels.py` | Compila QuickJS-ng per Android con l'NDK e lo impacchetta nei wheel `ytmpd-qjs` |
+| `.github/workflows/yt-dlp-update.yml` | Ogni settimana: un nuovo yt-dlp diventa una nuova release di correzione; `.github/scripts/bump_ytdlp.py` aggiorna i file |
 | `.github/workflows/release.yml` | Compila le due app e pubblica una release a ogni tag `v*`; `.github/scripts/version.sh` imposta la versione |
 | `android/wheels/` | Quei wheel, così per compilare l'APK non serve l'NDK |
 | `ROADMAP.md` | Piano per l'app con interfaccia grafica, desktop e Android |
