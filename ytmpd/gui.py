@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -10,12 +11,13 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlencode
 
 import flet as ft
 import yt_dlp
 from yt_dlp.utils import sanitize_filename
 
-from . import __version__, core
+from . import __version__, core, update
 from .i18n import STRINGS, resolve_language
 
 SEED = "#E0475B"
@@ -95,6 +97,8 @@ class App:
         self.cancel = None  # threading.Event while a download runs
         self.run = None  # counters of the running download
         self.last_line = ""  # result of the last load/download, shown under the list
+        self.errors = []  # recent yt-dlp errors, for "Report a problem"
+        self.update = None  # {"tag", "url"} when GitHub has a newer release
         self.rows = {}  # id -> status Container, updated in place during downloads
         self.picker = ft.FilePicker()
         self.clipboard = ft.Clipboard()
@@ -119,6 +123,7 @@ class App:
             self.open_link(start_link)
         else:
             page.run_task(self.prefill_from_clipboard)
+        page.run_thread(self.check_update)
 
     # ---- helpers -------------------------------------------------------------------------------------------
 
@@ -150,6 +155,26 @@ class App:
         if not self.mobile:
             return core.archive_path(out)
         return DATA / "archives" / (hashlib.sha1(str(out).encode()).hexdigest()[:16] + ".txt")
+
+    def remember_error(self, message):
+        self.errors = (self.errors + [message])[-10:]
+
+    def open_url(self, url):
+        self.page.run_task(self.launcher.launch_url, url)
+
+    def check_update(self):
+        try:
+            latest = update.latest_release()
+        except Exception:  # offline, rate-limited, no release yet: just don't say anything
+            return
+        if not update.is_newer(latest["tag"], __version__):
+            return
+        self.update = latest
+        self.page.show_dialog(ft.SnackBar(
+            ft.Text(self.t("update_available", tag=latest["tag"])), action=self.t("update_open"),
+            on_action=lambda e: self.open_url(latest["url"]), duration=ft.Duration(seconds=12)))
+        if self.tab == 2:
+            self.render()
 
     @staticmethod
     def cookies():
@@ -363,6 +388,7 @@ class App:
         except Exception as ex:
             self.playlist = None
             self.last_line = self.t("load_failed", reason=self.reason(core.reason_kind(str(ex))))
+            self.remember_error(str(ex))
         else:
             self.playlist = playlist | {"url": url}
             self.status, self.percent = {}, {}
@@ -428,6 +454,7 @@ class App:
                                    archive=str(archive))
         except Exception as ex:
             self.last_line = self.t("download_failed", reason=self.reason(core.reason_kind(str(ex))))
+            self.remember_error(str(ex))
         run, self.cancel = self.run, None
         if self.mobile:
             self.page.run_task(self.wakelock.disable)
@@ -469,6 +496,7 @@ class App:
                 run["started"].add(vid)
                 run["n"] += 1
             self.status[vid] = ("skipped", e["kind"], e["reason"])
+            self.remember_error(e["reason"])
             run["skipped"][vid] = {"title": run["titles"].get(vid) or e.get("title") or vid or "?", "kind": e["kind"]}
         else:
             return
@@ -563,9 +591,28 @@ class App:
                     ft.Text(self.t("about_versions", app=__version__, ytdlp=yt_dlp.version.__version__)),
                     ft.Text(self.t("about_ffmpeg", ffmpeg=ffmpeg), visible=not self.mobile),
                     ft.Text(self.t("about_js", js=js)),
-                    ft.TextButton(self.t("repo"), icon=ft.Icons.OPEN_IN_NEW,
-                                  on_click=lambda e: self.page.run_task(self.launcher.launch_url, REPO))),
+                    ft.FilledTonalButton(self.t("update_available", tag=self.update["tag"]) if self.update else "",
+                                         icon=ft.Icons.SYSTEM_UPDATE, visible=bool(self.update),
+                                         on_click=lambda e: self.open_url(self.update["url"])),
+                    ft.Row([
+                        ft.TextButton(self.t("repo"), icon=ft.Icons.OPEN_IN_NEW, on_click=lambda e: self.open_url(REPO)),
+                        ft.TextButton(self.t("report"), icon=ft.Icons.BUG_REPORT, on_click=self.report),
+                    ], wrap=True)),
         ], expand=True, spacing=28)
+
+    def diagnostics(self):
+        """What a bug report needs, without links: a playlist link can be private."""
+        errors = "\n".join(f"- {m[:300]}" for m in self.errors) or "- none"
+        return (f"**App** {__version__}, {'Android' if self.mobile else platform.system()} {platform.release()}\n"
+                f"**yt-dlp** {yt_dlp.version.__version__}, JavaScript: {', '.join(core.js_runtime_names()) or 'none'}, "
+                f"FFmpeg: {'yes' if core.ffmpeg_available() else 'no'}\n\n"
+                f"**What happened**\n\n(describe it here)\n\n**Last errors**\n{errors}\n")
+
+    async def report(self, e):
+        text = self.diagnostics()
+        await self.clipboard.set(text)
+        await self.launcher.launch_url(update.ISSUES + "?" + urlencode({"title": self.t("report_title"), "body": text}))
+        self.snack(self.t("report_copied"))
 
     async def import_cookies(self, e):
         files = await self.picker.pick_files(allowed_extensions=["txt"])

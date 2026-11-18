@@ -172,6 +172,17 @@ class RetryAfter403(unittest.TestCase):
         self.assertEqual((result["done"], result["skipped"], calls), (0, 1, 2))
 
 
+class UpdateCheck(unittest.TestCase):
+    def test_versions(self):
+        from ytmpd import update
+
+        self.assertTrue(update.is_newer("v0.2.1", "0.2.0"))
+        self.assertTrue(update.is_newer("v0.10.0", "0.9.9"))  # numbers, not text
+        self.assertFalse(update.is_newer("v0.2.0", "0.2.0"))
+        self.assertFalse(update.is_newer("v0.2.0", "0.2.0-dev.7"))  # a dev build of 0.2.0 is not older than 0.2.0
+        self.assertFalse(update.is_newer("v0.1.0", "0.2.0"))
+
+
 class Translations(unittest.TestCase):
     def test_same_keys_and_every_reason_explained(self):
         from ytmpd.i18n import STRINGS
