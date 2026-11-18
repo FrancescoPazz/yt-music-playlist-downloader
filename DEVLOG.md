@@ -1,5 +1,32 @@
 # Devlog
 
+## 2026-11-18 — Phase 4: Android app
+
+Same `ytmpd/gui.py` as the desktop, switching on `page.platform.is_mobile()`. Built with
+`flet build apk --arch arm64-v8a x86_64` (54 MB) and tested on the emulator (Android 16, x86_64).
+
+### What works, and how it was checked
+
+| Feature | Check |
+|---|---|
+| Opening a playlist link with the app | `am start -a VIEW -d https://music.youtube.com/playlist?list=…`: the app opens with the playlist loaded (Flet passes the link as the route `/playlist?list=…`). |
+| Phone layout | Navigation bar at the bottom, no format/folder controls, no browser cookies; screenshots in `docs/screenshots`. |
+| M4A into `Music/` | yt-dlp's `paths` downloads and tags in app storage and moves only the finished file: `Music/YT Music Playlist Downloader/Uploads from jawed/` holds just the `.m4a`; the archive stays in app storage. |
+| QuickJS | `qjs` from quickjs-ng 0.18.0, cross-compiled with NDK r28 and shipped as `ytmpd_qjs/libqjs.so` in a wheel per ABI. Flet's packaging copies any plain `.so` of an installed package into `jniLibs`, and `legacy_packaging = true` extracts it to `ANDROID_NATIVE_LIBRARY_DIR`, where it can run. Settings shows "quickjs"; the download log no longer has the "No supported JavaScript runtime" warning of phase 2. |
+| Screen kept on | `dumpsys window` shows `KEEP_SCREEN_ON` during the download and not after. |
+| Mobile data warning | With Wi-Fi off, Download asks first; "Download anyway" saves the file. |
+
+### Findings
+
+- Flet's Android activity is a bare `FlutterFragmentActivity`: an intent filter for `SEND` can be declared in
+  `pyproject.toml`, but nothing hands `EXTRA_TEXT` to Python. Real sharing needs a Flet extension with Kotlin code.
+- Every `subprocess` launch logs `libsigchain: Setting SIGSEGV to SIG_DFL` with a stack trace: it's the child
+  resetting its signal handlers, not a crash.
+- The emulator shell has no clipboard command and its clipboard is synced with the host's, so the clipboard check on
+  resume wasn't tested automatically.
+- `cookies.txt` import wasn't tested on the emulator (it needs the system file picker); its code is shared with the
+  desktop app.
+
 ## 2026-11-18 — Phase 3: desktop app
 
 The Flet app (`main.py`, `ytmpd/gui.py`) was tested three ways: a script driving `App` with a fake page and real

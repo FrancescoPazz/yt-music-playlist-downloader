@@ -27,13 +27,14 @@
 | Vuoi | Vai a |
 |---|---|
 | **Scaricare con finestra e pulsanti** | [App desktop](#app-desktop): incolla un link, scegli i brani, premi Scarica. |
+| **Scaricare su un telefono Android** | [App Android](#app-android): M4A direttamente nella cartella Musica. |
 | **Scaricare dal terminale** | [Installazione](#installazione), poi [Uso](#uso): due comandi e un link. |
 | **Sapere cosa finisce sul disco** | [Come funziona](#come-funziona): nomi dei file, tag, brani saltati e nuove esecuzioni. |
 | **Scaricare video con limite d'età o privati** | [Cookie del browser](#cookie-del-browser): usa la sessione in cui hai già fatto l'accesso. |
 | **Usarlo dal tuo codice Python** | [Sviluppo](#sviluppo): il pacchetto `ytmpd` e i suoi eventi. |
 | **Qualcosa è andato storto** | [Domande](#domande-frequenti): FFmpeg, buchi nella numerazione, file `NA`, HTTP 403. |
 
-[Come funziona](#come-funziona) · [App desktop](#app-desktop) · [Installazione](#installazione) · [Uso](#uso) · [Cookie del browser](#cookie-del-browser) ·
+[Come funziona](#come-funziona) · [App desktop](#app-desktop) · [App Android](#app-android) · [Installazione](#installazione) · [Uso](#uso) · [Cookie del browser](#cookie-del-browser) ·
 [Sviluppo](#sviluppo) · [Roadmap](ROADMAP.md) · [Domande](#domande-frequenti)
 
 ## Come funziona
@@ -103,6 +104,30 @@ Modalità sviluppatore di Windows attiva (Flutter usa i collegamenti simbolici):
 
 ```bash
 PYTHONUTF8=1 flet build windows --yes   # risultato in build/windows, circa 210 MB con Python e FFmpeg
+```
+
+## App Android
+
+| | |
+|---|---|
+| <img src="docs/screenshots/it/android-download.png" alt="Schermata Scarica su Android: un brano con la spunta, salvato in M4A in Music/YT Music Playlist Downloader, barra di navigazione in basso" width="240"> | <img src="docs/screenshots/it/android-settings.png" alt="Impostazioni su Android: importa un file cookies.txt, lingua, tema, e QuickJS come runtime JavaScript" width="240"> |
+| *Scarica, impaginata per il telefono* | *Impostazioni: cookies.txt al posto del browser* |
+
+La stessa app con le stesse schermate, con quello che cambia sul telefono:
+
+| | Su Android |
+|---|---|
+| **Formato e cartella** | Solo M4A (sul telefono non c'è FFmpeg), sempre in `Music/YT Music Playlist Downloader/<playlist>`, dove i lettori musicali lo trovano. Non serve nessun permesso di archiviazione. |
+| **Come passare il link** | In YouTube Music, **Condividi → Copia link**, poi apri l'app: il link viene preso dagli appunti. I link alle playlist si possono anche aprire con l'app, se nelle impostazioni Android dell'app attivi *Apri link supportati*. |
+| **Video riservati** | Sul telefono i cookie del browser non si possono leggere: in **Impostazioni** importa un `cookies.txt` esportato da un computer. |
+| **Playlist lunghe** | Lo schermo resta acceso durante il download, e l'app chiede conferma prima di scaricare con i dati mobili. |
+| **JavaScript** | L'app include un suo QuickJS-ng, quindi le verifiche di YouTube vengono risolte anche sul telefono. |
+
+Un APK pronto non c'è ancora: arriva, firmato, con la [fase 5](ROADMAP.md#phase-5--builds-and-releases). Per compilarlo
+servono l'Android SDK e la Modalità sviluppatore di Windows; i wheel di QuickJS sono già in `android/wheels`:
+
+```bash
+PIP_FIND_LINKS="$PWD/android/wheels" PYTHONUTF8=1 flet build apk --arch arm64-v8a x86_64 --yes
 ```
 
 ## Installazione
@@ -220,6 +245,8 @@ result = core.download("https://music.youtube.com/playlist?list=...", "downloads
 | `downloader.py` | Wrapper di due righe, così `python downloader.py` continua a funzionare |
 | `tests/test_core.py` | Test su link, opzioni e tag (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, che porta con sé `yt-dlp-ejs` (il risolutore della verifica JavaScript) e `mutagen` (tag M4A) |
+| `android/qjs/build_wheels.py` | Compila QuickJS-ng per Android con l'NDK e lo impacchetta nei wheel `ytmpd-qjs` |
+| `android/wheels/` | Quei wheel, così per compilare l'APK non serve l'NDK |
 | `ROADMAP.md` | Piano per l'app con interfaccia grafica, desktop e Android |
 | `DEVLOG.md` | Cosa ha scoperto ogni fase, a partire dalla prova su Android |
 | `spike/android/` | App Flet usa e getta per provare `ytmpd.core` su Android |

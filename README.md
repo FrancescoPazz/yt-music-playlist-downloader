@@ -27,13 +27,14 @@
 | You want to | Go to |
 |---|---|
 | **Download with a window and buttons** | [Desktop app](#desktop-app): paste a link, pick the tracks, press Download. |
+| **Download on an Android phone** | [Android app](#android-app): M4A straight into the Music folder. |
 | **Download from the terminal** | [Install](#install), then [Usage](#usage): two commands and a link. |
 | **Know what ends up on disk** | [How it works](#how-it-works): file names, tags, skipped tracks and re-runs. |
 | **Download age-restricted or private videos** | [Browser cookies](#browser-cookies): use the session you are already signed in with. |
 | **Use it from your own Python code** | [Development](#development): the `ytmpd` package and its events. |
 | **Something went wrong** | [Questions](#questions-people-ask): FFmpeg, gaps in the numbering, `NA` files, HTTP 403. |
 
-[How it works](#how-it-works) · [Desktop app](#desktop-app) · [Install](#install) · [Usage](#usage) · [Browser cookies](#browser-cookies) ·
+[How it works](#how-it-works) · [Desktop app](#desktop-app) · [Android app](#android-app) · [Install](#install) · [Usage](#usage) · [Browser cookies](#browser-cookies) ·
 [Development](#development) · [Roadmap](ROADMAP.md) · [Questions](#questions-people-ask)
 
 ## How it works
@@ -104,6 +105,30 @@ Developer Mode turned on (Flutter uses symlinks):
 
 ```bash
 PYTHONUTF8=1 flet build windows --yes   # output in build/windows, about 210 MB with Python and FFmpeg
+```
+
+## Android app
+
+| | |
+|---|---|
+| <img src="docs/screenshots/en/android-download.png" alt="Android Download screen: one track with a check mark, saved as M4A to Music/YT Music Playlist Downloader, navigation bar at the bottom" width="240"> | <img src="docs/screenshots/en/android-settings.png" alt="Android Settings: import a cookies.txt file, language, theme, and QuickJS as JavaScript runtime" width="240"> |
+| *Download, laid out for a phone* | *Settings: cookies.txt instead of the browser* |
+
+The same app and screens, with what changes on a phone:
+
+| | On Android |
+|---|---|
+| **Format and folder** | M4A only (there's no FFmpeg on the phone), always in `Music/YT Music Playlist Downloader/<playlist>`, where music players find it. No storage permission is needed. |
+| **Getting the link** | In YouTube Music, **Share → Copy link**, then open the app: the link is filled in from the clipboard. Playlist links can also be opened with the app if you turn on *Open supported links* for it in Android's app settings. |
+| **Restricted videos** | The browser's cookies can't be read on a phone: import a `cookies.txt` exported from a computer in **Settings**. |
+| **Long playlists** | The screen stays on while downloading, and the app asks before downloading on mobile data. |
+| **JavaScript** | The app ships its own QuickJS-ng, so YouTube's challenges are solved on the phone too. |
+
+There is no ready-made APK yet: it comes with [phase 5](ROADMAP.md#phase-5--builds-and-releases), signed. To build one
+you need the Android SDK and Windows Developer Mode; the QuickJS wheels are already in `android/wheels`:
+
+```bash
+PIP_FIND_LINKS="$PWD/android/wheels" PYTHONUTF8=1 flet build apk --arch arm64-v8a x86_64 --yes
 ```
 
 ## Install
@@ -220,6 +245,8 @@ in a few seconds, without downloading.
 | `downloader.py` | Two-line wrapper, so `python downloader.py` keeps working |
 | `tests/test_core.py` | Tests for links, options and tags (`python -m unittest`) |
 | `requirements.txt` | `yt-dlp[default]`, which brings `yt-dlp-ejs` (the JavaScript challenge solver) and `mutagen` (M4A tags) |
+| `android/qjs/build_wheels.py` | Builds QuickJS-ng for Android with the NDK and wraps it in the `ytmpd-qjs` wheels |
+| `android/wheels/` | Those wheels, so building the APK doesn't need the NDK |
 | `ROADMAP.md` | Plan for the desktop and Android GUI app |
 | `DEVLOG.md` | What each phase found out, starting from the Android spike |
 | `spike/android/` | Throwaway Flet app used to test `ytmpd.core` on Android |

@@ -10,7 +10,7 @@ riskiest part (Android) is tested before the interface is built.
 | [1. Core](#phase-1--a-core-the-gui-can-call) ✅ | `downloader.py` split into a reusable core, the CLI keeps working | CLI |
 | [2. Android spike](#phase-2--android-spike) ✅ | One track downloaded on a real phone, or a decision to change plan | Android |
 | [3. Desktop MVP](#phase-3--desktop-mvp) ✅ | A window that does what the CLI does today, plus a track list | Windows |
-| [4. Android app](#phase-4--android-app) | The same app on the phone, with sharing from YouTube Music | Android |
+| [4. Android app](#phase-4--android-app) 🚧 | The same app on the phone, with sharing from YouTube Music | Android |
 | [5. Releases](#phase-5--builds-and-releases) | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
 | [6. Staying current](#phase-6--keeping-up-with-youtube) | A new build whenever yt-dlp changes | Both |
 | [7. Later](#phase-7--later) | Covers, cleaner titles, playlist sync | Both |
@@ -112,6 +112,13 @@ the `imageio-ffmpeg` package; each playlist gets its own subfolder; HTTP 403s ar
 **Done when** someone who has never opened a terminal downloads a playlist on Windows from a `.zip` or installer.
 
 ## Phase 4 — Android app
+
+**Built and tested on the emulator**; see [DEVLOG.md](DEVLOG.md). Done: phone layout, M4A into `Music/`, `cookies.txt`
+import, screen kept on, mobile data warning, QuickJS-ng shipped as `libqjs.so`, playlist links opened with the app.
+Changed: the share sheet (item 1) needs native code Flet doesn't expose (reading `EXTRA_TEXT`), so v1 uses **Copy
+link** plus the clipboard check when the app comes back to the foreground; a small Flet extension can add real
+sharing later. Still open: a run on a real phone (long playlist, screen off) and the clipboard check, which the
+emulator test couldn't drive.
 
 The same screens, laid out for a phone (navigation bar at the bottom), plus what only makes sense on Android:
 
