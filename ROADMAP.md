@@ -13,7 +13,7 @@ riskiest part (Android) is tested before the interface is built.
 | [4. Android app](#phase-4--android-app) 🚧 | The same app on the phone, with sharing from YouTube Music | Android |
 | [5. Releases](#phase-5--builds-and-releases) 🚧 | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
 | [6. Staying current](#phase-6--keeping-up-with-youtube) ✅ | A new build whenever yt-dlp changes | Both |
-| [7. Later](#phase-7--later) | Covers, cleaner titles, playlist sync | Both |
+| [7. Later](#phase-7--later) 🚧 | Covers, cleaner titles, playlist sync | Both |
 
 ## Phase 0 — Choose the stack
 
@@ -170,6 +170,10 @@ The app breaks when YouTube changes and yt-dlp hasn't caught up, and an app user
   issue.
 
 ## Phase 7 — Later
+
+**Done:** 1 (covers, with mutagen and Pillow, so also on Android), 2 (clean titles, kept simple: the original title
+isn't stored), 3 (**Sync** on each History entry) and 5 (macOS and Linux jobs in `release.yml`). **Left:** 4, which
+needs a Kotlin foreground service that Flet can declare but not implement, like the share sheet of phase 4.
 
 1. **Cover art** embedded in the files (the video thumbnail, cropped square for YouTube Music tracks).
 2. **Cleaner titles**: remove "(Official Video)", "[VISUALIZER]" and similar from file names and tags, with the

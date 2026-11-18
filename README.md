@@ -49,7 +49,7 @@ best available audio of each video and saves it as MP3 or M4A.
 | **2. Link** | A link from `music.youtube.com` or `youtube.com` with a `list=` parameter becomes `https://www.youtube.com/playlist?list=…`, so a link copied from a song playing inside the playlist works too. |
 | **3. Download** | Takes the best audio stream. YouTube hides its streams behind a JavaScript challenge: yt-dlp solves it with Deno, Node.js, QuickJS or Bun, whichever is installed. |
 | **4. Convert** | **MP3**: FFmpeg converts the audio at the bitrate you chose (192 kbps unless you say otherwise). **M4A**: YouTube's own AAC stream is saved as it is, with no conversion and no quality lost. |
-| **5. Tag** | Title and artist (and album, when YouTube Music knows it). MP3s get ID3v2.3 tags, the version Windows Explorer and older players read. No cover art. |
+| **5. Tag** | Title and artist (and album, when YouTube Music knows it). MP3s get ID3v2.3 tags, the version Windows Explorer and older players read. Optionally the cover art (the video thumbnail, cropped square) and a clean title without "(Official Video)" and the like. |
 | **6. Skip** | A video that is deleted, private or blocked in your country is skipped and the rest of the playlist goes on. |
 | **7. Remember** | Each downloaded track is written to `.ytmpd-archive.txt` in the output folder. Running the same playlist again downloads only the tracks added since. |
 
@@ -89,8 +89,8 @@ messages are in Italian.
 | Screen | What is on it |
 |---|---|
 | **Download** | The link field, filled in from the clipboard when it holds a YouTube link. **Load** lists the tracks with position and duration; tick the ones you want. Tracks already in the destination folder are marked and left out. Format, MP3 quality and folder sit at the bottom; each playlist gets its own subfolder. During the download every track shows its progress, then a check mark or a red icon whose tooltip says why it was skipped. **Cancel** stops after the current chunk. |
-| **History** | The last 100 downloads: playlist, date, format, folder, how many tracks were saved and which were skipped, with the reason. **Open folder** and **Load again**. |
-| **Settings** | Browser cookies (see [Browser cookies](#browser-cookies)) or a `cookies.txt` file, language (Italian, English or the system's), theme (light, dark or the system's), the versions of yt-dlp, FFmpeg and the JavaScript runtime in use, and **Report a problem**: it copies those versions and the last errors (no links) and opens a new GitHub issue with them. |
+| **History** | The last 100 downloads: playlist, date, format, folder, how many tracks were saved and which were skipped, with the reason. **Open folder**, **Load again**, and **Sync**, which loads the playlist and downloads only the tracks added since. |
+| **Settings** | Cover art in the files (on by default) and clean titles (off), browser cookies (see [Browser cookies](#browser-cookies)) or a `cookies.txt` file, language (Italian, English or the system's), theme (light, dark or the system's), the versions of yt-dlp, FFmpeg and the JavaScript runtime in use, and **Report a problem**: it copies those versions and the last errors (no links) and opens a new GitHub issue with them. |
 
 The app uses its own FFmpeg (from the `imageio-ffmpeg` package) when there is none on the PATH, so MP3 works without
 installing anything else. Settings and history are saved in
@@ -176,6 +176,8 @@ python downloader.py "https://music.youtube.com/playlist?list=..."
 | `--browser` | `none`, `chrome`, `edge`, `firefox`, `brave`, `opera`, `vivaldi` | `none` | Browser whose cookies yt-dlp reads. See [Browser cookies](#browser-cookies). |
 | `--items` | positions, e.g. `1,3,5-8` | all | Download only these tracks. |
 | `--list` | | | Print the tracks with their position and duration, without downloading. |
+| `--covers` | | off | Embed the video thumbnail, cropped square, as cover art (cropping needs Pillow). |
+| `--clean-titles` | | off | Drop "(Official Video)", "[VISUALIZER]" and the like from titles and file names; "(Remix)", "(feat. …)" stay. |
 
 ```bash
 python downloader.py "URL" --list                       # see what's in it

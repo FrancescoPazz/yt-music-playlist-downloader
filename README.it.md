@@ -49,7 +49,7 @@ migliore di ogni video e lo salva in MP3 o M4A.
 | **2. Link** | Un link di `music.youtube.com` o `youtube.com` con il parametro `list=` diventa `https://www.youtube.com/playlist?list=…`, quindi funziona anche il link copiato da un brano in riproduzione dentro la playlist. |
 | **3. Download** | Prende il miglior flusso audio. YouTube nasconde i flussi dietro una verifica in JavaScript: yt-dlp la risolve con Deno, Node.js, QuickJS o Bun, quello che trova installato. |
 | **4. Conversione** | **MP3**: FFmpeg converte l'audio al bitrate scelto (192 kbps se non dici altro). **M4A**: il flusso AAC originale di YouTube viene salvato così com'è, senza conversione e senza perdere qualità. |
-| **5. Tag** | Titolo e artista (e album, quando YouTube Music lo conosce). Gli MP3 ricevono tag ID3v2.3, la versione letta da Esplora file di Windows e dai lettori più vecchi. Niente copertina. |
+| **5. Tag** | Titolo e artista (e album, quando YouTube Music lo conosce). Gli MP3 ricevono tag ID3v2.3, la versione letta da Esplora file di Windows e dai lettori più vecchi. A scelta anche la copertina (la miniatura del video, ritagliata quadrata) e un titolo pulito, senza "(Official Video)" e simili. |
 | **6. Salto** | Un video rimosso, privato o bloccato nel tuo paese viene saltato e il resto della playlist prosegue. |
 | **7. Memoria** | Ogni brano scaricato viene annotato in `.ytmpd-archive.txt` nella cartella di output. Rilanciando la stessa playlist scarica solo i brani aggiunti nel frattempo. |
 
@@ -88,8 +88,8 @@ Per ogni brano il terminale mostra il titolo, poi percentuale, velocità e tempo
 | Schermata | Cosa c'è |
 |---|---|
 | **Scarica** | Il campo del link, riempito dagli appunti quando contengono un link di YouTube. **Carica** elenca i brani con posizione e durata; spunta quelli che vuoi. I brani già presenti nella cartella di destinazione sono segnati e lasciati fuori. Formato, qualità MP3 e cartella stanno in basso; ogni playlist ha la sua sottocartella. Durante il download ogni brano mostra l'avanzamento, poi una spunta o un'icona rossa con il motivo del salto nel suggerimento. **Annulla** si ferma dopo il blocco in corso. |
-| **Cronologia** | Gli ultimi 100 download: playlist, data, formato, cartella, quanti brani sono stati salvati e quali saltati, con il motivo. **Apri cartella** e **Ricarica**. |
-| **Impostazioni** | Cookie del browser (vedi [Cookie del browser](#cookie-del-browser)) o un file `cookies.txt`, lingua (italiano, inglese o quella del sistema), tema (chiaro, scuro o quello del sistema), le versioni di yt-dlp, FFmpeg e del runtime JavaScript in uso, e **Segnala un problema**: copia quelle versioni e gli ultimi errori (senza link) e apre una nuova issue su GitHub già compilata. |
+| **Cronologia** | Gli ultimi 100 download: playlist, data, formato, cartella, quanti brani sono stati salvati e quali saltati, con il motivo. **Apri cartella**, **Ricarica**, e **Sincronizza**, che ricarica la playlist e scarica solo i brani aggiunti nel frattempo. |
+| **Impostazioni** | Copertina nei file (attiva di default) e titoli puliti (disattivi), cookie del browser (vedi [Cookie del browser](#cookie-del-browser)) o un file `cookies.txt`, lingua (italiano, inglese o quella del sistema), tema (chiaro, scuro o quello del sistema), le versioni di yt-dlp, FFmpeg e del runtime JavaScript in uso, e **Segnala un problema**: copia quelle versioni e gli ultimi errori (senza link) e apre una nuova issue su GitHub già compilata. |
 
 L'app usa un suo FFmpeg (dal pacchetto `imageio-ffmpeg`) quando nel PATH non ce n'è uno, quindi l'MP3 funziona senza
 installare altro. Impostazioni e cronologia sono salvate in
@@ -176,6 +176,8 @@ python downloader.py "https://music.youtube.com/playlist?list=..."
 | `--browser` | `none`, `chrome`, `edge`, `firefox`, `brave`, `opera`, `vivaldi` | `none` | Browser da cui yt-dlp legge i cookie. Vedi [Cookie del browser](#cookie-del-browser). |
 | `--items` | posizioni, es. `1,3,5-8` | tutti | Scarica solo questi brani. |
 | `--list` | | | Elenca i brani con posizione e durata, senza scaricarli. |
+| `--covers` | | no | Inserisce come copertina la miniatura del video, ritagliata quadrata (il ritaglio richiede Pillow). |
+| `--clean-titles` | | no | Toglie "(Official Video)", "[VISUALIZER]" e simili da titoli e nomi dei file; "(Remix)", "(feat. …)" restano. |
 
 ```bash
 python downloader.py "URL" --list                        # guarda cosa contiene
