@@ -52,6 +52,56 @@ jobs:
           name: windows
           path: yt-music-playlist-downloader-windows-*.zip
 
+  macos:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install "flet[all]==$FLET_VERSION"
+      - name: Version
+        id: version
+        run: .github/scripts/version.sh
+      - name: Build
+        run: |
+          flet build macos --yes --no-rich-output \
+            --build-version "${{ steps.version.outputs.number }}" --build-number "${{ github.run_number }}"
+      - name: Zip
+        run: ditto -c -k --keepParent build/macos/*.app "yt-music-playlist-downloader-macos-${{ steps.version.outputs.label }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: yt-music-playlist-downloader-macos-*.zip
+
+  linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install "flet[all]==$FLET_VERSION"
+      - name: System packages Flutter needs on Linux (Flet's own list)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $(python -c "from flet_cli.utils.linux_deps import linux_dependencies as d; print(*d)")
+      - name: Version
+        id: version
+        run: .github/scripts/version.sh
+      - name: Build
+        run: |
+          flet build linux --yes --no-rich-output \
+            --build-version "${{ steps.version.outputs.number }}" --build-number "${{ github.run_number }}"
+      - name: Archive
+        run: tar -czf "yt-music-playlist-downloader-linux-${{ steps.version.outputs.label }}.tar.gz" -C build linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: yt-music-playlist-downloader-linux-*.tar.gz
+
   android:
     needs: test
     runs-on: ubuntu-latest
@@ -97,7 +147,7 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, android]
+    needs: [windows, macos, linux, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -113,6 +163,7 @@ jobs:
             --title "$GITHUB_REF_NAME" --generate-notes \
             --notes "**Windows**: download the .zip, extract it and open yt-music-playlist-downloader.exe.
           **Android**: download the .apk on the phone and open it; it installs over the previous version and keeps the history.
+          **macOS** and **Linux**: extract the archive and open the app inside (not signed: on macOS, right-click it and choose Open the first time).
           See the [README](https://github.com/$GITHUB_REPOSITORY#download-the-app) for what Windows and Android say about apps from outside their stores.
 
           SHA-256:

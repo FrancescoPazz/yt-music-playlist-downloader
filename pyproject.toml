@@ -19,6 +19,12 @@ exclude = ["downloads", "spike", "tests", "docs", "build", ".venv", "android", "
 [tool.flet.windows]
 dependencies = ["yt-dlp[default]>=2026.10.26", "imageio-ffmpeg", "pillow"]
 
+[tool.flet.macos]
+dependencies = ["yt-dlp[default]>=2026.10.26", "imageio-ffmpeg", "pillow"]
+
+[tool.flet.linux]
+dependencies = ["yt-dlp[default]>=2026.10.26", "imageio-ffmpeg", "pillow"]
+
 [tool.flet.android]
 # Pure-Python parts of yt-dlp[default] (its native extras aren't needed for YouTube), plus QuickJS from
 # android/wheels: build with PIP_FIND_LINKS pointing there. Keep yt-dlp-ejs at the version yt-dlp pins.
