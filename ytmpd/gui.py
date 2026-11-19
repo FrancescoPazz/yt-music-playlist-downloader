@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -68,6 +69,12 @@ def duration_text(seconds):
         else f"{seconds // 60}:{seconds % 60:02d}"
 
 
+def link_in_text(text):
+    """The first YouTube link in shared text: some apps share "Title https://…" rather than just the link."""
+    match = re.search(r"https://(?:music\.|www\.|m\.)?youtu(?:be\.com|\.be)/\S+", text or "")
+    return match.group(0) if match else None
+
+
 def link_from_route(route):
     """A YouTube link opened with the app arrives as a route like "/playlist?list=..."."""
     return f"https://www.youtube.com{route}" if route and "list=" in route else None
@@ -108,6 +115,13 @@ class App:
         self.launcher = ft.UrlLauncher()
         self.wakelock = ft.Wakelock()
         self.connectivity = ft.Connectivity()
+        self.share = None
+        if self.mobile:
+            try:  # the Share menu extension is only in the Android build (android/share)
+                from ytmpd_share import ShareReceiver
+                self.share = ShareReceiver(on_shared=lambda e: self.open_link(link_in_text(e.data)))
+            except ImportError:
+                pass
 
         page.title = "YT Music Playlist Downloader"
         page.window.width, page.window.height = 1000, 720
@@ -125,7 +139,7 @@ class App:
         if start_link:
             self.open_link(start_link)
         else:
-            page.run_task(self.prefill_from_clipboard)
+            page.run_task(self.startup_link)
         page.run_thread(self.check_update)
 
     # ---- helpers -------------------------------------------------------------------------------------------
@@ -364,6 +378,19 @@ class App:
             if self.tab == 0:
                 self.url_field.value = text
                 self.url_field.update()
+
+    async def startup_link(self):
+        """A link shared from YouTube Music if the Share menu started the app, else one in the clipboard."""
+        shared = None
+        if self.share:
+            try:
+                shared = link_in_text(await self.share.get_initial())
+            except Exception:
+                pass
+        if shared:
+            self.open_link(shared)
+        else:
+            await self.prefill_from_clipboard()
 
     def on_lifecycle(self, e):
         # Back from YouTube Music after "Share → Copy link": the link is waiting in the clipboard.

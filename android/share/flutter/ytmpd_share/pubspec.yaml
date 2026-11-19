@@ -1,0 +1,15 @@
+name: ytmpd_share
+description: Receives text shared to the app from Android's Share menu, for YT Music Playlist Downloader.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flet: ^1.1.0
+  # 1.9.0 compiles against Android SDK 37, which the Android Gradle Plugin of Flet 1.1.2's template can't find
+  receive_sharing_intent: 1.8.1
