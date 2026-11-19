@@ -115,11 +115,12 @@ class App:
         self.launcher = ft.UrlLauncher()
         self.wakelock = ft.Wakelock()
         self.connectivity = ft.Connectivity()
-        self.share = None
+        self.share = self.keep_alive = None
         if self.mobile:
-            try:  # the Share menu extension is only in the Android build (android/share)
-                from ytmpd_share import ShareReceiver
+            try:  # the ytmpd_android extension is only in the Android build (android/extension)
+                from ytmpd_android import KeepAlive, ShareReceiver
                 self.share = ShareReceiver(on_shared=lambda e: self.open_link(link_in_text(e.data)))
+                self.keep_alive = KeepAlive()
             except ImportError:
                 pass
 
@@ -450,6 +451,33 @@ class App:
                          ft.FilledButton(self.t("mobile_data_go"), on_click=go)]))
         self.begin(tracks)
 
+    async def keep_running(self):
+        """A foreground service with a notification, so the download goes on with the screen off. Without the
+        extension, or if Android refuses the service, fall back to keeping the screen on."""
+        self.service_on, started = False, False
+        if self.keep_alive:
+            try:  # the first time this waits for the notification permission dialog
+                started = await self.keep_alive.start(self.playlist["title"] or "YouTube",
+                                                      self.progress_text.value or self.t("notification_starting"),
+                                                      self.t("notification_channel"))
+            except Exception:
+                pass
+        # No await between here and the flag, so stop_running can't slip in between on the event loop.
+        if not self.downloading:  # a short download can end while Android is still asking for the permission
+            if started:
+                await self.keep_alive.stop()
+            return
+        self.service_on = started
+        if not started:
+            await self.wakelock.enable()
+
+    async def stop_running(self):
+        if getattr(self, "service_on", False):
+            self.service_on = False
+            await self.keep_alive.stop()
+        else:
+            await self.wakelock.disable()
+
     async def on_mobile_data(self):
         try:
             kinds = await self.connectivity.get_connectivity()
@@ -470,7 +498,7 @@ class App:
         self.last_line = ""
         self.render()
         if self.mobile:  # a long playlist must not stop when the screen turns off
-            self.page.run_task(self.wakelock.enable)
+            self.page.run_task(self.keep_running)
         self.page.run_thread(self.download_worker, items, fmt)
 
     def stop(self, e):
@@ -493,7 +521,7 @@ class App:
             self.remember_error(str(ex))
         run, self.cancel = self.run, None
         if self.mobile:
-            self.page.run_task(self.wakelock.disable)
+            self.page.run_task(self.stop_running)
         if result:
             key = "cancelled" if result["cancelled"] else "finished"
             self.last_line = self.t(key, done=run["done"], skipped=len(run["skipped"]))
@@ -520,6 +548,8 @@ class App:
             run["current"] = vid
             self.status[vid], self.percent[vid] = "downloading", 0
             self.progress_text.value = self.t("progress", n=run["n"], total=run["total"], title=e["title"] or "")
+            if getattr(self, "service_on", False):
+                self.page.run_task(self.keep_alive.update, self.playlist["title"] or "YouTube", self.progress_text.value)
         elif kind == "progress":
             self.percent[vid] = e["percent"] or 0
             if time.monotonic() - run["last_draw"] < 0.2:  # a few redraws per second are plenty

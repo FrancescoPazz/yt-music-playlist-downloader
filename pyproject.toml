@@ -26,11 +26,17 @@ dependencies = ["yt-dlp[default]>=2026.10.26", "imageio-ffmpeg", "pillow"]
 dependencies = ["yt-dlp[default]>=2026.10.26", "imageio-ffmpeg", "pillow"]
 
 [tool.flet.android]
-# Pure-Python parts of yt-dlp[default] (its native extras aren't needed for YouTube), plus QuickJS and the Share
-# extension from android/wheels: build with PIP_FIND_LINKS pointing there. Keep yt-dlp-ejs at the version yt-dlp pins.
+# Pure-Python parts of yt-dlp[default] (its native extras aren't needed for YouTube), plus QuickJS and the
+# ytmpd_android extension from android/wheels: build with PIP_FIND_LINKS pointing there. Keep yt-dlp-ejs at the
+# version yt-dlp pins.
 dependencies = ["yt-dlp-ejs==0.8.0", "mutagen", "certifi", "requests", "pillow", "ytmpd-qjs==0.18.0",
-                "ytmpd-share==0.1.0"]
+                "ytmpd-android==0.2.0"]
 legacy_packaging = true  # extracts libqjs.so to disk, the only place Android lets an app execute files from
+
+# receive_sharing_intent compiles Java for 1.8 and Kotlin for 17; next to flutter_foreground_task the Kotlin Gradle
+# plugin turns that mismatch into an error. A warning is enough: the code runs on Java 17 either way.
+[tool.flet.android.gradle_properties]
+"kotlin.jvm.target.validation.mode" = "warning"
 
 # "Open with" for playlist links. Android 12+ opens unverified links in the browser unless the user turns on
 # "Open supported links" for the app in its system settings.
@@ -43,7 +49,17 @@ data = [
     { scheme = "https", host = "m.youtube.com", pathPrefix = "/playlist" },
 ]
 
-# Share → YT Music Playlist Downloader: the ytmpd_share extension hands the shared text to Python.
+# Long downloads with the screen off: the foreground service of ytmpd_android (flutter_foreground_task).
+[tool.flet.android.permission]
+"android.permission.FOREGROUND_SERVICE" = true
+"android.permission.FOREGROUND_SERVICE_DATA_SYNC" = true
+"android.permission.POST_NOTIFICATIONS" = true
+
+[tool.flet.android.service."com.pravera.flutter_foreground_task.service.ForegroundService"]
+foregroundServiceType = "dataSync"
+exported = false
+
+# Share → YT Music Playlist Downloader: ytmpd_android hands the shared text to Python.
 [[tool.flet.android.activity.intent_filter]]
 actions = ["android.intent.action.SEND"]
 categories = ["android.intent.category.DEFAULT"]
