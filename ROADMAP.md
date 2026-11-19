@@ -115,9 +115,8 @@ the `imageio-ffmpeg` package; each playlist gets its own subfolder; HTTP 403s ar
 
 **Built and tested on the emulator**; see [DEVLOG.md](DEVLOG.md). Done: phone layout, M4A into `Music/`, `cookies.txt`
 import, screen kept on, mobile data warning, QuickJS-ng shipped as `libqjs.so`, playlist links opened with the app.
-Changed: the share sheet (item 1) needs native code Flet doesn't expose (reading `EXTRA_TEXT`), so v1 uses **Copy
-link** plus the clipboard check when the app comes back to the foreground; a small Flet extension can add real
-sharing later. Still open: a run on a real phone (long playlist, screen off) and the clipboard check, which the
+The share sheet (item 1) came later, with `ytmpd_share`: a Flet extension on top of the `receive_sharing_intent`
+Flutter plugin, so no Kotlin of our own. Still open: a run on a real phone (long playlist, screen off) and the clipboard check, which the
 emulator test couldn't drive.
 
 The same screens, laid out for a phone (navigation bar at the bottom), plus what only makes sense on Android:

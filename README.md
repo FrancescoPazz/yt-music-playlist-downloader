@@ -125,7 +125,7 @@ The same app and screens, with what changes on a phone:
 | | On Android |
 |---|---|
 | **Format and folder** | M4A only (there's no FFmpeg on the phone), always in `Music/YT Music Playlist Downloader/<playlist>`, where music players find it. No storage permission is needed. |
-| **Getting the link** | In YouTube Music, **Share → Copy link**, then open the app: the link is filled in from the clipboard. Playlist links can also be opened with the app if you turn on *Open supported links* for it in Android's app settings. |
+| **Getting the link** | In YouTube Music, **Share → YT Music Playlist Downloader**: the app opens with the playlist loaded, or switches to it if it's already open. **Copy link** and then opening the app works too, through the clipboard. Playlist links can also be opened with the app if you turn on *Open supported links* for it in Android's app settings. |
 | **Restricted videos** | The browser's cookies can't be read on a phone: import a `cookies.txt` exported from a computer in **Settings**. |
 | **Long playlists** | The screen stays on while downloading, and the app asks before downloading on mobile data. |
 | **JavaScript** | The app ships its own QuickJS-ng, so YouTube's challenges are solved on the phone too. |
@@ -257,6 +257,7 @@ in a few seconds, without downloading.
 | `android/qjs/build_wheels.py` | Builds QuickJS-ng for Android with the NDK and wraps it in the `ytmpd-qjs` wheels |
 | `.github/workflows/yt-dlp-update.yml` | Weekly: a new yt-dlp means a new patch release; `.github/scripts/bump_ytdlp.py` updates the files |
 | `.github/workflows/release.yml` | Builds both apps and publishes a release on every `v*` tag; `.github/scripts/version.sh` sets the version |
+| `android/share/` | `ytmpd_share`, a small Flet extension (Python + Dart, on top of `receive_sharing_intent`) that hands shared text to the app; `build_wheel.py` packs it |
 | `android/wheels/` | Those wheels, so building the APK doesn't need the NDK |
 | `ROADMAP.md` | Plan for the desktop and Android GUI app |
 | `DEVLOG.md` | What each phase found out, starting from the Android spike |

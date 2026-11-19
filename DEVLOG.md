@@ -1,5 +1,18 @@
 # Devlog
 
+## 2026-11-19 — Share from YouTube Music
+
+- A Flet extension is a Python package that also installs `flutter/<name>/` (a Dart package) at the root of
+  site-packages: `serious_python` copies it to `build/flutter-packages`, and the template imports
+  `package:<name>/<name>.dart` and calls `<name>.Extension()`. `ytmpd_share` (in `android/share`, packed by
+  `build_wheel.py` into `android/wheels`) is a `ShareReceiver` service: `get_initial()` for the share that started the
+  app, the `shared` event for later ones. The native side is the `receive_sharing_intent` Flutter plugin.
+- `receive_sharing_intent` 1.9.0 compiles against Android SDK 37; Gradle installs it as `android-37.0` and the Android
+  Gradle Plugin of Flet 1.1.2's template looks for `android-37`, so the build fails. 1.8.1 (SDK 34) has the same Dart API.
+- Tested on the emulator with `am start -a SEND -t text/plain`: with the app closed, "Ascolta su YouTube Music
+  https://music.youtube.com/playlist?list=…" opened it with the playlist loaded (the link is picked out of the text);
+  with the app open on Settings, a second share reached the same instance (`singleTop`) and loaded the new link.
+
 ## 2026-11-18 — Phase 7, and the release workflow on GitHub
 
 - With Actions unblocked, manual runs of `release.yml` built every platform. The APK from CI is signed with the release
