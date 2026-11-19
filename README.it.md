@@ -126,7 +126,7 @@ La stessa app con le stesse schermate, con quello che cambia sul telefono:
 | **Formato e cartella** | Solo M4A (sul telefono non c'è FFmpeg), sempre in `Music/YT Music Playlist Downloader/<playlist>`, dove i lettori musicali lo trovano. Non serve nessun permesso di archiviazione. |
 | **Come passare il link** | In YouTube Music, **Condividi → YT Music Playlist Downloader**: l'app si apre con la playlist caricata, o ci passa se è già aperta. Funziona anche **Copia link** e poi aprire l'app, tramite gli appunti. I link alle playlist si possono anche aprire con l'app, se nelle impostazioni Android dell'app attivi *Apri link supportati*. |
 | **Video riservati** | Sul telefono i cookie del browser non si possono leggere: in **Impostazioni** importa un `cookies.txt` esportato da un computer. |
-| **Playlist lunghe** | Lo schermo resta acceso durante il download, e l'app chiede conferma prima di scaricare con i dati mobili. |
+| **Playlist lunghe** | Il download gira come servizio in primo piano con una notifica, quindi continua a schermo spento (la prima volta Android chiede di consentire le notifiche). L'app chiede conferma prima di scaricare con i dati mobili. |
 | **JavaScript** | L'app include un suo QuickJS-ng, quindi le verifiche di YouTube vengono risolte anche sul telefono. |
 
 L'APK è nelle [Release](https://github.com/FrancescoPazz/yt-music-playlist-downloader/releases/latest) (vedi [Scarica l'app](#scarica-lapp)). Per compilarlo da te servono l'Android SDK
@@ -257,7 +257,7 @@ result = core.download("https://music.youtube.com/playlist?list=...", "downloads
 | `android/qjs/build_wheels.py` | Compila QuickJS-ng per Android con l'NDK e lo impacchetta nei wheel `ytmpd-qjs` |
 | `.github/workflows/yt-dlp-update.yml` | Ogni settimana: un nuovo yt-dlp diventa una nuova release di correzione; `.github/scripts/bump_ytdlp.py` aggiorna i file |
 | `.github/workflows/release.yml` | Compila le due app e pubblica una release a ogni tag `v*`; `.github/scripts/version.sh` imposta la versione |
-| `android/share/` | `ytmpd_share`, una piccola estensione Flet (Python + Dart, basata su `receive_sharing_intent`) che passa all'app il testo condiviso; `build_wheel.py` la impacchetta |
+| `android/extension/` | `ytmpd_android`, una piccola estensione Flet (Python + Dart, basata sui plugin `receive_sharing_intent` e `flutter_foreground_task`): menu Condividi e servizio in primo piano; `build_wheel.py` la impacchetta |
 | `android/wheels/` | Quei wheel, così per compilare l'APK non serve l'NDK |
 | `ROADMAP.md` | Piano per l'app con interfaccia grafica, desktop e Android |
 | `DEVLOG.md` | Cosa ha scoperto ogni fase, a partire dalla prova su Android |

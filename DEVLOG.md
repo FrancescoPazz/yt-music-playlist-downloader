@@ -1,5 +1,22 @@
 # Devlog
 
+## 2026-11-19 — Downloads in the background on Android
+
+- The extension is now `ytmpd_android` (`android/extension`, wheel 0.2.0) with a second service, `KeepAlive`, on top of
+  `flutter_foreground_task` 11.0.3: a `dataSync` foreground service with `allowWakeLock`, and a notification. The
+  manifest gets `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`, `POST_NOTIFICATIONS` and the `<service>` tag from
+  `pyproject.toml`. Without the extension, or if Android refuses the service, the app keeps the screen on as before.
+- Adding the plugin made the build fail in `receive_sharing_intent` ("Inconsistent JVM-target compatibility", Java 1.8
+  vs Kotlin 17): the newer Kotlin Gradle plugin turns that check into an error.
+  `kotlin.jvm.target.validation.mode = "warning"` in `[tool.flet.android.gradle_properties]` fixes it.
+- Bug found on the emulator: the first time, starting the service waits for the notification permission dialog; a
+  short download had already ended by then, so the service started after the stop and stayed on. `keep_running()` now
+  checks, with no `await` in between, whether the download is still running before keeping the service.
+- Checked with `dumpsys activity services`: tapping Allow after the download ended leaves no foreground service; with
+  the permission granted the service is in the foreground (`types=0x1`) during the download and gone after it. The
+  notification's progress text ("Track 1 of 1") wasn't seen in the 6 seconds watched; a run with the screen off on a
+  real phone is still to do.
+
 ## 2026-11-19 — Share from YouTube Music
 
 - A Flet extension is a Python package that also installs `flutter/<name>/` (a Dart package) at the root of

@@ -13,7 +13,7 @@ riskiest part (Android) is tested before the interface is built.
 | [4. Android app](#phase-4--android-app) 🚧 | The same app on the phone, with sharing from YouTube Music | Android |
 | [5. Releases](#phase-5--builds-and-releases) ✅ | `.exe` and `.apk` built by GitHub Actions on every tag | Both |
 | [6. Staying current](#phase-6--keeping-up-with-youtube) ✅ | A new build whenever yt-dlp changes | Both |
-| [7. Later](#phase-7--later) 🚧 | Covers, cleaner titles, playlist sync | Both |
+| [7. Later](#phase-7--later) ✅ | Covers, cleaner titles, playlist sync | Both |
 
 ## Phase 0 — Choose the stack
 
@@ -115,7 +115,7 @@ the `imageio-ffmpeg` package; each playlist gets its own subfolder; HTTP 403s ar
 
 **Built and tested on the emulator**; see [DEVLOG.md](DEVLOG.md). Done: phone layout, M4A into `Music/`, `cookies.txt`
 import, screen kept on, mobile data warning, QuickJS-ng shipped as `libqjs.so`, playlist links opened with the app.
-The share sheet (item 1) came later, with `ytmpd_share`: a Flet extension on top of the `receive_sharing_intent`
+The share sheet (item 1) came later, with the `ytmpd_android` extension: a Flet extension on top of the `receive_sharing_intent`
 Flutter plugin, so no Kotlin of our own. Still open: a run on a real phone (long playlist, screen off) and the clipboard check, which the
 emulator test couldn't drive.
 
@@ -128,7 +128,8 @@ The same screens, laid out for a phone (navigation bar at the bottom), plus what
    app storage, because `Music/` refuses non-audio files.
 3. **Sign-in**: the browser's cookies can't be read on Android. v1: import a `cookies.txt` exported from a computer.
    Later: sign in to YouTube in a WebView inside the app and pass those cookies to yt-dlp.
-4. **Long downloads**: keep the screen on during the download (or the foreground service, if phase 2 found a way).
+4. **Long downloads**: a foreground service with a notification (`ytmpd_android`, on top of `flutter_foreground_task`);
+   keeping the screen on is the fallback.
 5. **Mobile data**: warning before downloading on a metered connection.
 6. **JavaScript runtime**: ship a QuickJS binary for arm64 as a native library (`libqjs.so`) and pass its path in
    `js_runtimes`, so the app keeps working when yt-dlp drops extraction without a runtime.
@@ -171,8 +172,8 @@ The app breaks when YouTube changes and yt-dlp hasn't caught up, and an app user
 ## Phase 7 — Later
 
 **Done:** 1 (covers, with mutagen and Pillow, so also on Android), 2 (clean titles, kept simple: the original title
-isn't stored), 3 (**Sync** on each History entry) and 5 (macOS and Linux jobs in `release.yml`). **Left:** 4, which
-needs a Kotlin foreground service that Flet can declare but not implement, like the share sheet of phase 4.
+isn't stored), 3 (**Sync** on each History entry), 4 (a foreground service through the `ytmpd_android` extension,
+no Kotlin of our own) and 5 (macOS and Linux jobs in `release.yml`).
 
 1. **Cover art** embedded in the files (the video thumbnail, cropped square for YouTube Music tracks).
 2. **Cleaner titles**: remove "(Official Video)", "[VISUALIZER]" and similar from file names and tags, with the
