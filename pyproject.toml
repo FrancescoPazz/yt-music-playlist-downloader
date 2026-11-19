@@ -1,7 +1,7 @@
 # Used by `flet build` to package the desktop and Android apps. The CLI only needs requirements.txt.
 [project]
 name = "yt-music-playlist-downloader"
-version = "0.3.0"  # keep in sync with ytmpd/__init__.py
+version = "0.4.0"  # keep in sync with ytmpd/__init__.py
 description = "Download YouTube and YouTube Music playlists as MP3 or M4A"
 requires-python = ">=3.10"
 dependencies = ["flet==1.1.2", "yt-dlp>=2026.10.26"]
